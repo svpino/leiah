@@ -1,1 +1,13 @@
-{}
+{
+  "sendgrid": {
+    "pubsub_topic": "emails",
+    "from": "support@leiah.io",
+    "key": "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",
+    "templates": {
+      "user_invitation": "d-0652237451e547e1b7b555023d9b8509"
+    }
+  },
+  "general": {
+    "product_url": "https://www.leiah.io/"
+  }
+}

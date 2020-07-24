@@ -5,6 +5,9 @@ admin.initializeApp(functions.config().firebase);
 
 const artifacts = require("./artifacts");
 
+const emails = require("./emails");
+exports.onPublishEmail = emails.onPublishEmail;
+
 /**
  * This function triggers whenever a user document from the main /users
  * collection is deleted. It removes the associated Firebase account and
@@ -66,7 +69,7 @@ exports.onTenantUserCreate = functions.firestore
         // document created in the main /users collection.
         return await Promise.all([
             createInvitedUser(email, name),
-            // notifications.sendUserInvitation(tenant, email, role, name, invitation),
+            emails.sendUserInvitation(tenant, email, role, name, invitation),
         ]);
     });
 
@@ -167,7 +170,7 @@ async function deleteUserFromAllExistingTenants(email) {
         .getUserAcrossAllTenants(email)
         .then((querySnapshot) => {
             querySnapshot.forEach((userSnapshot) => {
-                return deleteUserSnapshotFromTenant(userSnapshot);
+                return deleteUserSnapshotFromTenant(userSnapshot, email);
             });
 
             return functions.logger.info(
@@ -212,8 +215,9 @@ async function updateUserSnapshotOnTenant(userSnapshot, email, provider) {
  * Deletes the specified user snapshot from a tenant.
  *
  * @param {*} userSnapshot The user snapshot that should be deleted.
+ * @param {*} email The email address of the user.
  */
-async function deleteUserSnapshotFromTenant(userSnapshot) {
+async function deleteUserSnapshotFromTenant(userSnapshot, email) {
     if (userSnapshot.ref.path.startsWith("tenants/")) {
         userSnapshot.ref
             .delete()
