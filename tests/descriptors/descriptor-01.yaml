@@ -1,0 +1,55 @@
+
+models:
+  model-01:
+    release: model01-201014-1523-003-9013733b
+    
+    train_instance_type: ml.p2.xlarge
+    train_max_run: 86400
+
+    hyperparameters:
+      application: applications.inceptionv3
+      epochs: 50
+
+    experiments:
+      1:
+        type: training
+        description: Beautiful is better than ugly.
+        hyperparameters:
+          learning_rate: 1e-3
+          batch_size: 64
+
+      2:
+        type: training
+        hyperparameters:
+          epochs: 60
+          batch_size: 128
+
+      hpt-01:
+        type: tuning
+        description: Although practicality beats purity.
+        max_jobs: 10
+        max_parallel_jobs: 2
+
+        ranges:
+          categorical: 
+            learning_rate:
+              - 1e-3
+                1e-5
+          continuous: 
+            epochs:
+              min: 20
+              max: 50
+          
+  model-02:
+    hyperparameters:
+      application: applications.resnet50
+      epochs: 50
+    experiments:
+      1.0.1:
+        type: training
+        hyperparameters:
+          epochs: 40
+          learning_rate: 1e-3
+
+  model-03:
+    release: null
