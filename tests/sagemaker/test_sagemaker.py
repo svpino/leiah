@@ -6,8 +6,13 @@ from leiah.sagemaker.exceptions import InvalidDescriptorError
 
 
 @pytest.fixture
-def sagemaker():
-    descriptor_file_path = Path().cwd() / "tests/descriptors/descriptor-01.yaml"
+def descriptor_base_path():
+    return Path().cwd() / "tests" / "descriptors"
+
+
+@pytest.fixture
+def sagemaker(descriptor_base_path):
+    descriptor_file_path = descriptor_base_path / "descriptor-01.yaml"
     return SageMaker(descriptor_file_path)
 
 
@@ -74,7 +79,7 @@ def test_hyperparameters_inheritance(sagemaker):
 
 
 def test_no_models():
-    descriptor_file_path = Path().cwd() / "tests/descriptors/descriptor-02.yaml"
+    descriptor_file_path = Path().cwd() / "tests" / "descriptors" / "descriptor-02.yaml"
     sagemaker = SageMaker(descriptor_file_path)
 
     assert len(sagemaker.models) == 0
@@ -85,11 +90,11 @@ def test_descriptor_not_found():
         SageMaker("unexistent")
 
 
-def test_invalid_descriptor_non_yaml_file():
+def test_invalid_descriptor_non_yaml_file(descriptor_base_path):
     with pytest.raises(InvalidDescriptorError):
-        SageMaker(Path().cwd() / "tests/descriptors/invalid-descriptor-1.yaml")
+        SageMaker(descriptor_base_path / "invalid-descriptor-1.yaml")
 
 
-def test_invalid_descriptor_missing_root():
+def test_invalid_descriptor_missing_root(descriptor_base_path):
     with pytest.raises(InvalidDescriptorError):
-        SageMaker(Path().cwd() / "tests/descriptors/invalid-descriptor-2.yaml")
+        SageMaker(descriptor_base_path / "invalid-descriptor-2.yaml")

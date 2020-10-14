@@ -5,33 +5,13 @@ from leiah.sagemaker.exceptions import InvalidDescriptorError
 
 
 @dataclass
-class Model(object):
-    name: str
-    hyperparameters: dict() = field(default_factory=dict)
-    experiments: list[object] = field(default_factory=list)
-
-    @classmethod
-    def create(cls, name, data):
-        model = Model(name)
-
-        if "hyperparameters" in data:
-            model.hyperparameters = data["hyperparameters"]
-
-        if "experiments" in data:
-            for identifier, data in data["experiments"].items():
-                model.experiments.append(Experiment.create(model, identifier, data))
-
-        return model
-
-
-@dataclass
 class Experiment(object):
     identifier: str
     description: str = None
     hyperparameters: dict() = field(default_factory=dict)
 
     @classmethod
-    def create(cls, model: Model, identifier: str, data: dict()):
+    def create(cls, model, identifier: str, data: dict()):
         experiment_type = data.get("type", "training")
         if experiment_type == "training":
             experiment = Training(model, identifier, data)
@@ -59,6 +39,26 @@ class Training(Experiment):
 @dataclass
 class Tuning(Experiment):
     pass
+
+
+@dataclass
+class Model(object):
+    name: str
+    hyperparameters: dict() = field(default_factory=dict)
+    experiments: list[Experiment] = field(default_factory=list)
+
+    @classmethod
+    def create(cls, name, data):
+        model = Model(name)
+
+        if "hyperparameters" in data:
+            model.hyperparameters = data["hyperparameters"]
+
+        if "experiments" in data:
+            for identifier, data in data["experiments"].items():
+                model.experiments.append(Experiment.create(model, identifier, data))
+
+        return model
 
 
 class SageMaker(object):
