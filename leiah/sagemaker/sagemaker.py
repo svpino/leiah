@@ -41,24 +41,18 @@ class Tuning(Experiment):
     pass
 
 
-@dataclass
 class Model(object):
-    name: str
-    hyperparameters: dict() = field(default_factory=dict)
-    experiments: list[Experiment] = field(default_factory=list)
-
-    @classmethod
-    def create(cls, name, data):
-        model = Model(name)
+    def __init__(self, name: str, data: dict()) -> None:
+        self.name = name
+        self.hyperparameters = dict()
+        self.experiments = []
 
         if "hyperparameters" in data:
-            model.hyperparameters = data["hyperparameters"]
+            self.hyperparameters = data["hyperparameters"]
 
         if "experiments" in data:
             for identifier, data in data["experiments"].items():
-                model.experiments.append(Experiment.create(model, identifier, data))
-
-        return model
+                self.experiments.append(Experiment.create(self, identifier, data))
 
 
 class SageMaker(object):
@@ -97,7 +91,7 @@ class SageMaker(object):
                 return
 
             for name, data in models.items():
-                self.__models.append(Model.create(name, data))
+                self.__models.append(Model(name, data))
 
     @property
     def models(self):
