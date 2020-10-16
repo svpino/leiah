@@ -8,6 +8,6 @@ setup(
     author="Santiago L. Valdarrama",
     author_email="svpino@gmail.com",
     packages=find_packages(exclude=["test"]),
-    install_requires=["PyYAML==5.3.1"],
+    install_requires=["PyYAML==5.3.1", "sagemaker==2.15.0"],
     zip_safe=False,
 )

@@ -1,13 +1,15 @@
 import pytest
 from pathlib import Path
 
-from leiah.descriptor import Descriptor
-from leiah.exceptions import InvalidDescriptorError
+from leiah.descriptor import Descriptor, _get_estimator
+from leiah.exceptions import InvalidDescriptorError, InvalidEstimatorError
+
+from tests.resources.estimators import ModelEstimator, ExperimentEstimator
 
 
 @pytest.fixture
 def descriptor_base_path():
-    return Path().cwd() / "tests" / "descriptors"
+    return Path().cwd() / "tests" / "resources"
 
 
 @pytest.fixture
@@ -22,6 +24,13 @@ def test_models(descriptor):
     assert descriptor.models[0].name == "model-01"
     assert descriptor.models[1].name == "model-02"
     assert descriptor.models[2].name == "model-03"
+
+
+def test_model_estimator(descriptor):
+    estimator = descriptor.models[0].estimator
+
+    assert estimator.role == "role-name"
+    assert estimator.version == 3
 
 
 def test_model_hyperparameters(descriptor):
@@ -42,6 +51,15 @@ def test_experiments(descriptor):
     descriptor.models[0].experiments[1].identifier == "2"
     descriptor.models[0].experiments[2].identifier == "hpt-01"
     descriptor.models[1].experiments[0].identifier == "1.0.1"
+
+
+def test_experiments_estimator(descriptor):
+    model = descriptor.models[0]
+
+    assert isinstance(model.experiments[0].estimator, ExperimentEstimator)
+    assert model.experiments[0].estimator.sample == 123
+
+    assert isinstance(model.experiments[1].estimator, ModelEstimator)
 
 
 def test_experiments_description(descriptor):
@@ -78,8 +96,16 @@ def test_hyperparameters_inheritance(descriptor):
     ), "Hyperparameter should have been overwritten"
 
 
-def test_no_models():
-    descriptor_file_path = Path().cwd() / "tests" / "descriptors" / "descriptor-02.yaml"
+def test_get_estimator_invalid_estimator():
+    with pytest.raises(InvalidEstimatorError):
+        _get_estimator(data={"classname": "invalid.module.Estimator"})
+
+    with pytest.raises(InvalidEstimatorError):
+        _get_estimator(data={"classname": "tests.resources.estimators.Invalid"})
+
+
+def test_no_models(descriptor_base_path):
+    descriptor_file_path = descriptor_base_path / "descriptor-02.yaml"
     descriptor = Descriptor(descriptor_file_path)
 
     assert len(descriptor.models) == 0

@@ -3,6 +3,12 @@ models:
   model-01:
     release: model01-201014-1523-003-9013733b
     
+    estimator: 
+      classname: tests.resources.estimators.ModelEstimator
+      properties:
+        role: role-name
+        version: 3
+
     train_instance_type: ml.p2.xlarge
     train_max_run: 86400
 
@@ -14,6 +20,11 @@ models:
       1:
         type: training
         description: Beautiful is better than ugly.
+        estimator: 
+          classname: tests.resources.estimators.ExperimentEstimator
+          properties:
+            sample: 123
+
         hyperparameters:
           learning_rate: 1e-3
           batch_size: 64

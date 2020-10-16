@@ -1,12 +1,15 @@
 import yaml
+import importlib
+
 from dataclasses import dataclass, field
 
-from leiah.exceptions import InvalidDescriptorError
+from leiah.exceptions import InvalidDescriptorError, InvalidEstimatorError
 
 
 @dataclass
 class Experiment(object):
     identifier: str
+    estimator: object
     description: str = None
     hyperparameters: dict() = field(default_factory=dict)
 
@@ -23,6 +26,11 @@ class Experiment(object):
             )
 
         experiment.description = data.get("description", None)
+        experiment.estimator = (
+            _get_estimator(data["estimator"])
+            if "estimator" in data
+            else model.estimator
+        )
 
         experiment.hyperparameters.update(model.hyperparameters)
         if "hyperparameters" in data:
@@ -46,9 +54,12 @@ class Model(object):
         self.name = name
         self.hyperparameters = dict()
         self.experiments = []
+        self.estimator = None
 
-        if "hyperparameters" in data:
-            self.hyperparameters = data["hyperparameters"]
+        if "estimator" in data:
+            self.estimator = _get_estimator(data["estimator"])
+
+        self.hyperparameters = data.get("hyperparameters", dict())
 
         if "experiments" in data:
             for identifier, data in data["experiments"].items():
@@ -60,7 +71,7 @@ class Descriptor(object):
         self.__models = []
         self._load_descriptor(descriptor_file_path)
 
-    def _load_descriptor(self, descriptor_file_path):
+    def _load_descriptor(self, descriptor_file_path) -> None:
         try:
             with open(descriptor_file_path) as f:
                 data = yaml.load(f, Loader=yaml.FullLoader)
@@ -69,7 +80,7 @@ class Descriptor(object):
         else:
             self._parse_descriptor(data)
 
-    def _parse_descriptor(self, data):
+    def _parse_descriptor(self, data: dict()) -> None:
         if not isinstance(data, dict):
             raise InvalidDescriptorError("The specified file is not a valid descriptor")
 
@@ -87,5 +98,22 @@ class Descriptor(object):
                 self.__models.append(Model(name, data))
 
     @property
-    def models(self):
+    def models(self) -> list[Model]:
         return self.__models
+
+
+def _get_estimator(data):
+    identifiers = data["classname"].split(".")
+    class_name = identifiers[-1]
+    module_name = ".".join(identifiers[:-1])
+
+    try:
+        module = importlib.import_module(module_name)
+        class_ = getattr(module, class_name)
+    except ModuleNotFoundError:
+        raise InvalidEstimatorError(data["classname"])
+    except AttributeError:
+        raise InvalidEstimatorError(data["classname"])
+    else:
+        properties = data.get("properties", dict())
+        return class_(**properties)
