@@ -1,7 +1,10 @@
+from pathlib import Path
 import yaml
 import importlib
 
 from dataclasses import dataclass, field
+
+from yaml.scanner import ScannerError
 
 from leiah.exceptions import InvalidDescriptorError, InvalidEstimatorError
 
@@ -67,9 +70,21 @@ class Model(object):
 
 
 class Descriptor(object):
-    def __init__(self, descriptor_file_path) -> None:
+    def __init__(self, descriptor) -> None:
         self.__models = []
-        self._load_descriptor(descriptor_file_path)
+
+        if isinstance(descriptor, dict):
+            self._parse_descriptor(data=descriptor)
+        elif isinstance(descriptor, str) or isinstance(descriptor, Path):
+            self._load_descriptor(descriptor_file_path=descriptor)
+        else:
+            raise InvalidDescriptorError(
+                "Invalid descriptor source. Must be a dictionary, or "
+                "the path of the descriptor file."
+            )
+
+    def process(self, model: str = None, experiment=None):
+        pass
 
     def _load_descriptor(self, descriptor_file_path) -> None:
         try:
@@ -77,6 +92,8 @@ class Descriptor(object):
                 data = yaml.load(f, Loader=yaml.FullLoader)
         except FileNotFoundError:
             raise
+        except ScannerError:
+            raise InvalidDescriptorError("The specified file is not a valid descriptor")
         else:
             self._parse_descriptor(data)
 

@@ -26,6 +26,14 @@ def test_models(descriptor):
     assert descriptor.models[2].name == "model-03"
 
 
+def test_models_from_dict():
+    descriptor = Descriptor({"models": {"model1": {}, "model2": {}}})
+    assert len(descriptor.models) == 2
+
+    assert descriptor.models[0].name == "model1"
+    assert descriptor.models[1].name == "model2"
+
+
 def test_model_estimator(descriptor):
     estimator = descriptor.models[0].estimator
 
@@ -124,3 +132,17 @@ def test_invalid_descriptor_non_yaml_file(descriptor_base_path):
 def test_invalid_descriptor_missing_root(descriptor_base_path):
     with pytest.raises(InvalidDescriptorError):
         Descriptor(descriptor_base_path / "invalid-descriptor-2.yaml")
+
+
+def test_invalid_descriptor_invalid_yaml(descriptor_base_path):
+    with pytest.raises(InvalidDescriptorError):
+        Descriptor(descriptor_base_path / "invalid-descriptor-4.yaml")
+
+
+def test_invalid_descriptor_source():
+    with pytest.raises(InvalidDescriptorError):
+        Descriptor(123)
+
+
+def test_process(descriptor):
+    pass
