@@ -6,11 +6,16 @@ from dataclasses import dataclass, field
 
 from yaml.scanner import ScannerError
 
-from leiah.exceptions import InvalidDescriptorError, InvalidEstimatorError
+from leiah.exceptions import (
+    ExperimentNotFoundError,
+    InvalidDescriptorError,
+    InvalidEstimatorError,
+)
 
 
 @dataclass
 class Experiment(object):
+    model: object
     identifier: str
     estimator: object
     description: str = None
@@ -56,7 +61,7 @@ class Model(object):
     def __init__(self, name: str, data: dict()) -> None:
         self.name = name
         self.hyperparameters = dict()
-        self.experiments = []
+        self.experiments = dict()
         self.estimator = None
 
         if "estimator" in data:
@@ -66,12 +71,15 @@ class Model(object):
 
         if "experiments" in data:
             for identifier, data in data["experiments"].items():
-                self.experiments.append(Experiment.create(self, identifier, data))
+                identifier = str(identifier)
+                self.experiments[identifier] = Experiment.create(
+                    model=self, identifier=identifier, data=data
+                )
 
 
 class Descriptor(object):
     def __init__(self, descriptor) -> None:
-        self.__models = []
+        self.__models = dict()
 
         if isinstance(descriptor, dict):
             self._parse_descriptor(data=descriptor)
@@ -83,8 +91,37 @@ class Descriptor(object):
                 "the path of the descriptor file."
             )
 
-    def process(self, model: str = None, experiment=None):
+    def process(self, experiments):
         pass
+
+    def _get_experiments(self, experiments=None) -> list[Experiment]:
+        if experiments is None:
+            experiments = list(self.models.keys())
+        elif isinstance(experiments, str):
+            experiments = [experiments]
+
+        result = []
+
+        for name in experiments:
+            identifier = name.split(".", 1)
+
+            try:
+                model = self.models[identifier[0]]
+            except KeyError:
+                raise ExperimentNotFoundError(name)
+
+            if len(identifier) == 2:
+                try:
+                    experiment = model.experiments[identifier[1]]
+                except KeyError:
+                    raise ExperimentNotFoundError(name)
+                else:
+                    result.append(experiment)
+            else:
+                for experiment in model.experiments.values():
+                    result.append(experiment)
+
+        return result
 
     def _load_descriptor(self, descriptor_file_path) -> None:
         try:
@@ -102,20 +139,20 @@ class Descriptor(object):
             raise InvalidDescriptorError("The specified file is not a valid descriptor")
 
         try:
-            models = data["models"]
+            descriptor_models = data["models"]
         except KeyError:
             raise InvalidDescriptorError(
                 'Descriptor file is missing the root element "models".'
             )
         else:
-            if models is None:
+            if descriptor_models is None:
                 return
 
-            for name, data in models.items():
-                self.__models.append(Model(name, data))
+            for name, data in descriptor_models.items():
+                self.__models[name] = Model(name, data)
 
     @property
-    def models(self) -> list[Model]:
+    def models(self) -> dict:
         return self.__models
 
 
