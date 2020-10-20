@@ -19,10 +19,29 @@ class Experiment(object):
     identifier: str
     estimator: object
     description: str = None
-    hyperparameters: dict() = field(default_factory=dict)
 
     @classmethod
     def create(cls, model, identifier: str, data: dict()):
+        def get_properties():
+            properties = dict()
+            if "estimator" in model.data and "properties" in model.data["estimator"]:
+                properties.update(model.data["estimator"]["properties"])
+
+            if "estimator" in data and "properties" in data["estimator"]:
+                properties.update(data["estimator"]["properties"])
+
+            return properties
+
+        def get_hyperparameters():
+            hyperparameters = dict()
+            if "hyperparameters" in model.data:
+                hyperparameters.update(model.data["hyperparameters"])
+
+            if "hyperparameters" in data:
+                hyperparameters.update(data["hyperparameters"])
+
+            return hyperparameters
+
         experiment_type = data.get("type", "training")
         if experiment_type == "training":
             experiment = Training(model, identifier, data)
@@ -34,15 +53,17 @@ class Experiment(object):
             )
 
         experiment.description = data.get("description", None)
-        experiment.estimator = (
-            _get_estimator(data["estimator"])
-            if "estimator" in data
-            else model.estimator
-        )
 
-        experiment.hyperparameters.update(model.hyperparameters)
-        if "hyperparameters" in data:
-            experiment.hyperparameters.update(data["hyperparameters"])
+        if "estimator" in data:
+            estimator_classname = data["estimator"]["classname"]
+        else:
+            estimator_classname = model.data["estimator"]["classname"]
+
+        experiment.estimator = _get_estimator(
+            estimator_classname,
+            properties=get_properties(),
+            hyperparameters=get_hyperparameters(),
+        )
 
         return experiment
 
@@ -60,14 +81,8 @@ class Tuning(Experiment):
 class Model(object):
     def __init__(self, name: str, data: dict()) -> None:
         self.name = name
-        self.hyperparameters = dict()
         self.experiments = dict()
-        self.estimator = None
-
-        if "estimator" in data:
-            self.estimator = _get_estimator(data["estimator"])
-
-        self.hyperparameters = data.get("hyperparameters", dict())
+        self.data = data
 
         if "experiments" in data:
             for identifier, data in data["experiments"].items():
@@ -91,8 +106,9 @@ class Descriptor(object):
                 "the path of the descriptor file."
             )
 
-    def process(self, experiments):
-        pass
+    def process(self, experiments=None):
+        for experiment in self._get_experiments(experiments):
+            experiment.estimator.process(experiment)
 
     def _get_experiments(self, experiments=None) -> list[Experiment]:
         if experiments is None:
@@ -156,8 +172,8 @@ class Descriptor(object):
         return self.__models
 
 
-def _get_estimator(data):
-    identifiers = data["classname"].split(".")
+def _get_estimator(estimator, properties, hyperparameters):
+    identifiers = estimator.split(".")
     class_name = identifiers[-1]
     module_name = ".".join(identifiers[:-1])
 
@@ -165,9 +181,8 @@ def _get_estimator(data):
         module = importlib.import_module(module_name)
         class_ = getattr(module, class_name)
     except ModuleNotFoundError:
-        raise InvalidEstimatorError(data["classname"])
+        raise InvalidEstimatorError(estimator)
     except AttributeError:
-        raise InvalidEstimatorError(data["classname"])
+        raise InvalidEstimatorError(estimator)
     else:
-        properties = data.get("properties", dict())
-        return class_(**properties)
+        return class_(**properties, hyperparameters=hyperparameters)

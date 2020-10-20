@@ -8,9 +8,8 @@ models:
       properties:
         role: role-name
         version: 3
-
-    train_instance_type: ml.p2.xlarge
-    train_max_run: 86400
+        train_instance_type: ml.p2.xlarge
+        train_max_run: 86400
 
     hyperparameters:
       application: applications.inceptionv3
@@ -58,6 +57,8 @@ models:
     experiments:
       1.0.1:
         type: training
+        estimator: 
+          classname: tests.resources.estimators.DummyEstimator
         hyperparameters:
           epochs: 40
           learning_rate: 1e-3

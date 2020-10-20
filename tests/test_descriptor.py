@@ -1,4 +1,3 @@
-from _pytest import python
 import pytest
 from pathlib import Path
 
@@ -39,23 +38,6 @@ def test_models_from_dict():
     assert isinstance(descriptor.models["model-02"], Model)
 
 
-def test_model_estimator(descriptor):
-    estimator = descriptor.models["model-01"].estimator
-
-    assert estimator.role == "role-name"
-    assert estimator.version == 3
-
-
-def test_model_hyperparameters(descriptor):
-    model1 = descriptor.models["model-01"]
-    assert len(model1.hyperparameters) == 2
-    assert "application" in model1.hyperparameters
-    assert "epochs" in model1.hyperparameters
-
-    model3 = descriptor.models["model-03"]
-    assert len(model3.hyperparameters) == 0
-
-
 def test_experiments(descriptor):
     assert len(descriptor.models["model-01"].experiments) == 3
     assert len(descriptor.models["model-02"].experiments) == 1
@@ -81,40 +63,54 @@ def test_experiments_description(descriptor):
     assert model.experiments["2"].description is None
 
 
-def test_experiments_hyperparameters(descriptor):
-    experiment1 = descriptor.models["model-01"].experiments["1"]
-    assert "learning_rate" in experiment1.hyperparameters
-    assert "batch_size" in experiment1.hyperparameters
+def test_experiments_estimator_hyperparameters(descriptor):
+    estimator = descriptor.models["model-01"].experiments["1"].estimator
+    assert len(estimator.hyperparameters) == 4
+    assert "learning_rate" in estimator.hyperparameters
+    assert "application" in estimator.hyperparameters
+    assert "epochs" in estimator.hyperparameters
+    assert "batch_size" in estimator.hyperparameters
 
-    experiment2 = descriptor.models["model-01"].experiments["2"]
-    assert "epochs" in experiment2.hyperparameters
-    assert "batch_size" in experiment2.hyperparameters
+    estimator = descriptor.models["model-01"].experiments["2"].estimator
+
+    assert len(estimator.hyperparameters) == 3
+    assert "application" in estimator.hyperparameters
+    assert "epochs" in estimator.hyperparameters
+    assert "batch_size" in estimator.hyperparameters
 
 
-def test_hyperparameters_inheritance(descriptor):
-    model1 = descriptor.models["model-01"]
-    experiment1 = descriptor.models["model-01"].experiments["1"]
+def test_experiments_estimator_hyperparameters_inheritance(descriptor):
+    model = descriptor.models["model-01"]
+    estimator = model.experiments["1"].estimator
 
     assert all(
-        [h in experiment1.hyperparameters for h in model1.hyperparameters.keys()]
+        [h in estimator.hyperparameters for h in model.data["hyperparameters"].keys()]
     ), "Every model hyperparameter should be present in the experiment"
 
     assert (
-        experiment1.hyperparameters["epochs"] == model1.hyperparameters["epochs"]
+        estimator.hyperparameters["epochs"] == model.data["hyperparameters"]["epochs"]
     ), "Hyperparameter value should have been inherited"
 
     assert (
-        model1.experiments["2"].hyperparameters["epochs"]
-        != model1.hyperparameters["epochs"]
+        model.experiments["2"].estimator.hyperparameters["epochs"]
+        != model.data["hyperparameters"]["epochs"]
     ), "Hyperparameter should have been overwritten"
 
 
 def test_get_estimator_invalid_estimator():
     with pytest.raises(InvalidEstimatorError):
-        _get_estimator(data={"classname": "invalid.module.Estimator"})
+        _get_estimator(
+            estimator="invalid.module.Estimator",
+            properties=dict(),
+            hyperparameters=dict(),
+        )
 
     with pytest.raises(InvalidEstimatorError):
-        _get_estimator(data={"classname": "tests.resources.estimators.Invalid"})
+        _get_estimator(
+            estimator="tests.resources.estimators.Invalid",
+            properties=dict(),
+            hyperparameters=dict(),
+        )
 
 
 def test_no_models(descriptor_base_path):
