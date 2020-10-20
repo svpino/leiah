@@ -3,6 +3,7 @@ from pathlib import Path
 
 from leiah.descriptor import Descriptor, Experiment, Model, _get_estimator
 from leiah.exceptions import (
+    EstimatorMissingPropertyError,
     InvalidDescriptorError,
     InvalidEstimatorError,
     ExperimentNotFoundError,
@@ -145,6 +146,25 @@ def test_invalid_descriptor_source():
         Descriptor(123)
 
 
+def test_():
+    with pytest.raises(EstimatorMissingPropertyError):
+        Descriptor(
+            {
+                "models": {
+                    "model-01": {
+                        "experiments": {
+                            "1": {
+                                "estimator": {
+                                    "classname": "leiah.estimators.TensorFlowEstimator"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        )
+
+
 def test_get_experiments_single_experiment(descriptor):
     experiments = descriptor._get_experiments(experiments="model-01.2")
 
@@ -194,3 +214,19 @@ def test_get_experiments_from_model(descriptor):
 def test_get_all_experiments(descriptor):
     experiments = descriptor._get_experiments()
     assert len(experiments) == 4
+
+
+def test_process_training(descriptor):
+    estimator = descriptor.models["model-01"].experiments["1"].estimator
+
+    assert estimator.fitted is False
+    descriptor.process(experiments="model-01.1")
+    assert estimator.fitted is True
+
+
+def test_process_tunning(descriptor):
+    estimator = descriptor.models["model-01"].experiments["hpt-01"].estimator
+
+    assert estimator.tuned is False
+    descriptor.process(experiments="model-01.hpt-01")
+    assert estimator.tuned is True

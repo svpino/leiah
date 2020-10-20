@@ -2,12 +2,11 @@ from pathlib import Path
 import yaml
 import importlib
 
-from dataclasses import dataclass, field
-
+from dataclasses import dataclass
 from yaml.scanner import ScannerError
 
 from leiah.exceptions import (
-    ExperimentNotFoundError,
+    EstimatorMissingPropertyError, ExperimentNotFoundError,
     InvalidDescriptorError,
     InvalidEstimatorError,
 )
@@ -54,10 +53,11 @@ class Experiment(object):
 
         experiment.description = data.get("description", None)
 
-        if "estimator" in data:
-            estimator_classname = data["estimator"]["classname"]
-        else:
-            estimator_classname = model.data["estimator"]["classname"]
+        estimator_classname = (
+            data["estimator"]["classname"]
+            if "estimator" in data
+            else model.data["estimator"]["classname"]
+        )
 
         experiment.estimator = _get_estimator(
             estimator_classname,
@@ -70,12 +70,14 @@ class Experiment(object):
 
 @dataclass
 class Training(Experiment):
-    pass
+    def process(self):
+        return self.estimator.fit()
 
 
 @dataclass
 class Tuning(Experiment):
-    pass
+    def process(self):
+        return self.estimator.tune()
 
 
 class Model(object):
@@ -108,7 +110,7 @@ class Descriptor(object):
 
     def process(self, experiments=None):
         for experiment in self._get_experiments(experiments):
-            experiment.estimator.process(experiment)
+            experiment.process()
 
     def _get_experiments(self, experiments=None) -> list[Experiment]:
         if experiments is None:
@@ -185,4 +187,7 @@ def _get_estimator(estimator, properties, hyperparameters):
     except AttributeError:
         raise InvalidEstimatorError(estimator)
     else:
-        return class_(**properties, hyperparameters=hyperparameters)
+        try:
+            return class_(**properties, hyperparameters=hyperparameters)
+        except TypeError as e:
+            raise EstimatorMissingPropertyError(estimator, e)
