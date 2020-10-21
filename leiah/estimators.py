@@ -8,6 +8,8 @@ class Estimator(object):
     experiment: str
     hyperparameters: dict
 
+    def get_training_job_name(self):
+        return f"{self.model}-{self.experiment}"
 
 @dataclass
 class TensorFlowEstimator(Estimator):
@@ -25,9 +27,9 @@ class TensorFlowEstimator(Estimator):
     train_volume_size: int = 10
     debugger_hook_config: bool = False
 
-    def get_sagemaker_estimator(self, base_job_name, role):
+    def get_sagemaker_estimator(self, role):
         sagemaker_estimator = TensorFlow(
-            base_job_name=base_job_name,
+            base_job_name=self.get_training_job_name(),
             source_dir=self.source_dir,
             entry_point=self.entry_point,
             role=role,
