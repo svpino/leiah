@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="leiah",
-    version="0.0.0",
+    version="0.0.1",
     description="Leiah",
     url="https://github.com/svpino/leiah",
     author="Santiago L. Valdarrama",

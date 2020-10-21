@@ -112,7 +112,7 @@ class Descriptor(object):
         for experiment in self._get_experiments(experiments):
             experiment.process()
 
-    def _get_experiments(self, experiments=None) -> list[Experiment]:
+    def _get_experiments(self, experiments=None) -> list:
         if experiments is None:
             experiments = list(self.models.keys())
         elif isinstance(experiments, str):
