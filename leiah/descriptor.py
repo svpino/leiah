@@ -167,7 +167,7 @@ class Descriptor(object):
                 return
 
             for name, data in descriptor_models.items():
-                self.__models[name] = Model(name, data)
+                self.__models[str(name)] = Model(str(name), data)
 
     @property
     def models(self) -> dict:

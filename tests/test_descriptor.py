@@ -31,6 +31,13 @@ def test_models(descriptor):
     assert isinstance(descriptor.models["model-03"], Model)
 
 
+def test_models_numeric_name():
+    descriptor = Descriptor({"models": {101: {}, 2: {}}})
+
+    assert isinstance(descriptor.models["101"], Model)
+    assert isinstance(descriptor.models["2"], Model)
+
+
 def test_models_from_dict():
     descriptor = Descriptor({"models": {"model-01": {}, "model-02": {}}})
     assert len(descriptor.models) == 2
@@ -146,7 +153,7 @@ def test_invalid_descriptor_source():
         Descriptor(123)
 
 
-def test_():
+def test_estimator_missing_properties():
     with pytest.raises(EstimatorMissingPropertyError):
         Descriptor(
             {
@@ -230,3 +237,5 @@ def test_process_tunning(descriptor):
     assert estimator.tuned is False
     descriptor.process(experiments="model-01.hpt-01")
     assert estimator.tuned is True
+
+
