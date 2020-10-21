@@ -105,10 +105,26 @@ def test_experiments_estimator_hyperparameters_inheritance(descriptor):
     ), "Hyperparameter should have been overwritten"
 
 
+def test_get_estimator():
+    estimator = _get_estimator(
+        estimator="tests.resources.estimators.DummyEstimator",
+        model="model-1",
+        experiment="experiment-1",
+        properties=dict(),
+        hyperparameters={"hp1": 123},
+    )
+
+    assert estimator.model == "model-1"
+    assert estimator.experiment == "experiment-1"
+    assert estimator.hyperparameters["hp1"] == 123
+
+
 def test_get_estimator_invalid_estimator():
     with pytest.raises(InvalidEstimatorError):
         _get_estimator(
             estimator="Estimator",
+            model="model-1",
+            experiment="experiment-1",
             properties=dict(),
             hyperparameters=dict(),
         )
@@ -116,6 +132,8 @@ def test_get_estimator_invalid_estimator():
     with pytest.raises(InvalidEstimatorError):
         _get_estimator(
             estimator="invalid.module.Estimator",
+            model="model-1",
+            experiment="experiment-1",
             properties=dict(),
             hyperparameters=dict(),
         )
@@ -123,6 +141,8 @@ def test_get_estimator_invalid_estimator():
     with pytest.raises(InvalidEstimatorError):
         _get_estimator(
             estimator="tests.resources.estimators.Invalid",
+            model="model-1",
+            experiment="experiment-1",
             properties=dict(),
             hyperparameters=dict(),
         )

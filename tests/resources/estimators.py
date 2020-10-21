@@ -1,18 +1,18 @@
 from dataclasses import dataclass, field
+from leiah.estimators import Estimator
 
 
 @dataclass
-class DummyEstimator(object):
-    hyperparameters: dict = field(default_factory=dict)
+class DummyEstimator(Estimator):
+    pass
 
 
 @dataclass
-class ModelEstimator(object):
+class ModelEstimator(Estimator):
     role: str
     version: int
     train_instance_type: str
     train_max_run: int
-    hyperparameters: dict = field(default_factory=dict)
 
     fitted: bool = False
     tuned: bool = False
@@ -25,13 +25,12 @@ class ModelEstimator(object):
 
 
 @dataclass
-class ExperimentEstimator(object):
+class ExperimentEstimator(Estimator):
     role: str
     version: int
     train_instance_type: str
     train_max_run: int
     sample: int
-    hyperparameters: dict = field(default_factory=dict)
 
     fitted: bool = False
     tuned: bool = False

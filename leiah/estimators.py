@@ -1,9 +1,16 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from sagemaker.tensorflow import TensorFlow
 
 
 @dataclass
-class TensorFlowEstimator(object):
+class Estimator(object):
+    model: str
+    experiment: str
+    hyperparameters: dict
+
+
+@dataclass
+class TensorFlowEstimator(Estimator):
     entry_point: str
     train_instance_type: str
     source_dir: str
@@ -17,7 +24,6 @@ class TensorFlowEstimator(object):
     train_instance_count: int = 1
     train_volume_size: int = 10
     debugger_hook_config: bool = False
-    hyperparameters: dict = field(default_factory=dict)
 
     def get_sagemaker_estimator(self, base_job_name, role):
         sagemaker_estimator = TensorFlow(

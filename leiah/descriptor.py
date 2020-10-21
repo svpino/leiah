@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from yaml.scanner import ScannerError
 
 from leiah.exceptions import (
-    EstimatorMissingPropertyError, ExperimentNotFoundError,
+    EstimatorMissingPropertyError,
+    ExperimentNotFoundError,
     InvalidDescriptorError,
     InvalidEstimatorError,
 )
@@ -61,6 +62,8 @@ class Experiment(object):
 
         experiment.estimator = _get_estimator(
             estimator_classname,
+            model=model.name,
+            experiment=experiment.identifier,
             properties=get_properties(),
             hyperparameters=get_hyperparameters(),
         )
@@ -174,7 +177,7 @@ class Descriptor(object):
         return self.__models
 
 
-def _get_estimator(estimator, properties, hyperparameters):
+def _get_estimator(estimator, model, experiment, properties, hyperparameters):
     identifiers = estimator.strip().split(".")
     class_name = identifiers[-1]
     module_name = ".".join(identifiers[:-1])
@@ -191,6 +194,11 @@ def _get_estimator(estimator, properties, hyperparameters):
         raise InvalidEstimatorError(estimator)
     else:
         try:
-            return class_(**properties, hyperparameters=hyperparameters)
+            return class_(
+                model=model,
+                experiment=experiment,
+                **properties,
+                hyperparameters=hyperparameters,
+            )
         except TypeError as e:
             raise EstimatorMissingPropertyError(estimator, e)
