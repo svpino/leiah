@@ -1,3 +1,5 @@
+import sagemaker
+
 from dataclasses import dataclass, field
 from sagemaker.tensorflow import TensorFlow
 
@@ -28,6 +30,14 @@ class TensorFlowEstimator(Estimator):
     train_volume_size: int = 10
     debugger_hook_config: bool = False
     channels: dict = field(default_factory=dict)
+
+    def fit(self):
+        print(f"Fitting estimator {self.get_training_job_name()}...")
+
+        role = sagemaker.get_execution_role()
+        sagemaker_estimator = self.get_sagemaker_estimator(role=role)
+
+        return sagemaker_estimator.fit(self.channels, wait=False)
 
     def get_sagemaker_estimator(self, role):
         sagemaker_estimator = TensorFlow(
