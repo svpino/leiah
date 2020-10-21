@@ -108,6 +108,13 @@ def test_experiments_estimator_hyperparameters_inheritance(descriptor):
 def test_get_estimator_invalid_estimator():
     with pytest.raises(InvalidEstimatorError):
         _get_estimator(
+            estimator="Estimator",
+            properties=dict(),
+            hyperparameters=dict(),
+        )
+
+    with pytest.raises(InvalidEstimatorError):
+        _get_estimator(
             estimator="invalid.module.Estimator",
             properties=dict(),
             hyperparameters=dict(),
@@ -237,5 +244,3 @@ def test_process_tunning(descriptor):
     assert estimator.tuned is False
     descriptor.process(experiments="model-01.hpt-01")
     assert estimator.tuned is True
-
-

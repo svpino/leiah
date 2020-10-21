@@ -175,9 +175,12 @@ class Descriptor(object):
 
 
 def _get_estimator(estimator, properties, hyperparameters):
-    identifiers = estimator.split(".")
+    identifiers = estimator.strip().split(".")
     class_name = identifiers[-1]
     module_name = ".".join(identifiers[:-1])
+
+    if not module_name:
+        raise InvalidEstimatorError(estimator)
 
     try:
         module = importlib.import_module(module_name)
