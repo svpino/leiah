@@ -2,7 +2,6 @@ from pathlib import Path
 import yaml
 import importlib
 
-from dataclasses import dataclass
 from yaml.scanner import ScannerError
 
 from leiah.exceptions import (
@@ -13,19 +12,22 @@ from leiah.exceptions import (
 )
 
 
-@dataclass
 class Experiment(object):
-    model: object
-    identifier: str
-    estimator: object
-    description: str = None
+    def __init__(self, model: object, identifier: str, type: str, data: dict) -> None:
+        self.model = model
+        self.identifier = identifier
+        self.type = type
 
-    @classmethod
-    def create(cls, model, identifier: str, data: dict()):
+        self._initialize(data)
+
+    def _initialize(self, data):
         def get_properties():
             properties = dict()
-            if "estimator" in model.data and "properties" in model.data["estimator"]:
-                properties.update(model.data["estimator"]["properties"])
+            if (
+                "estimator" in self.model.data
+                and "properties" in self.model.data["estimator"]
+            ):
+                properties.update(self.model.data["estimator"]["properties"])
 
             if "estimator" in data and "properties" in data["estimator"]:
                 properties.update(data["estimator"]["properties"])
@@ -34,53 +36,39 @@ class Experiment(object):
 
         def get_hyperparameters():
             hyperparameters = dict()
-            if "hyperparameters" in model.data:
-                hyperparameters.update(model.data["hyperparameters"])
+            if "hyperparameters" in self.model.data:
+                hyperparameters.update(self.model.data["hyperparameters"])
 
             if "hyperparameters" in data:
                 hyperparameters.update(data["hyperparameters"])
 
             return hyperparameters
 
-        experiment_type = data.get("type", "training")
-        if experiment_type == "training":
-            experiment = Training(model, identifier, data)
-        elif experiment_type == "tuning":
-            experiment = Tuning(model, identifier, data)
-        else:
-            raise InvalidDescriptorError(
-                f'Experiment type "{experiment_type}" is not supported.'
-            )
-
-        experiment.description = data.get("description", None)
+        self.description = data.get("description", None)
 
         estimator_classname = (
             data["estimator"]["classname"]
             if "estimator" in data
-            else model.data["estimator"]["classname"]
+            else self.model.data["estimator"]["classname"]
         )
 
-        experiment.estimator = _get_estimator(
+        self.estimator = _get_estimator(
             estimator_classname,
-            model=model.name,
-            experiment=experiment.identifier,
+            model=self.model.name,
+            experiment=self.identifier,
             properties=get_properties(),
             hyperparameters=get_hyperparameters(),
         )
 
-        return experiment
-
-
-@dataclass
-class Training(Experiment):
     def process(self):
-        return self.estimator.fit()
-
-
-@dataclass
-class Tuning(Experiment):
-    def process(self):
-        return self.estimator.tune()
+        if self.type == "training":
+            self.estimator.fit()
+        elif self.type == "tuning":
+            self.estimator.tune()
+        else:
+            raise InvalidDescriptorError(
+                f'Experiment type "{self.type}" is not supported.'
+            )
 
 
 class Model(object):
@@ -92,8 +80,9 @@ class Model(object):
         if "experiments" in data:
             for identifier, data in data["experiments"].items():
                 identifier = str(identifier)
-                self.experiments[identifier] = Experiment.create(
-                    model=self, identifier=identifier, data=data
+                type = data.get("type", "training")
+                self.experiments[identifier] = Experiment(
+                    model=self, identifier=identifier, type=type, data=data
                 )
 
 

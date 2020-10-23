@@ -55,6 +55,10 @@ def test_experiments(descriptor):
     assert isinstance(descriptor.models["model-01"].experiments["hpt-01"], Experiment)
     assert isinstance(descriptor.models["model-02"].experiments["1.0.1"], Experiment)
 
+    descriptor.models["model-01"].experiments[
+        "hpt-01"
+    ].estimator._get_hyperparameter_ranges()
+
 
 def test_experiments_estimator(descriptor):
     model = descriptor.models["model-01"]
@@ -264,3 +268,23 @@ def test_process_tunning(descriptor):
     assert estimator.tuned is False
     descriptor.process(experiments="model-01.hpt-01")
     assert estimator.tuned is True
+
+
+def test_process_invalid_experiment_type():
+    model = Model(
+        name="model1",
+        data={
+            "experiments": {
+                "experiment1": {
+                    "type": "invalid",
+                    "estimator": {
+                        "classname": "tests.resources.estimators.DummyEstimator"
+                    },
+                }
+            }
+        },
+    )
+    experiment = model.experiments["experiment1"]
+
+    with pytest.raises(InvalidDescriptorError):
+        experiment.process()

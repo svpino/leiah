@@ -1,21 +1,35 @@
-from dataclasses import dataclass
 from leiah.estimators import Estimator
 
 
-@dataclass
 class DummyEstimator(Estimator):
-    pass
+    def __init__(self, model, experiment, hyperparameters=None) -> None:
+        super().__init__(
+            model=model, experiment=experiment, hyperparameters=hyperparameters
+        )
 
 
-@dataclass
 class ModelEstimator(Estimator):
-    role: str
-    version: int
-    train_instance_type: str
-    train_max_run: int
+    def __init__(
+        self,
+        model: str,
+        experiment: str,
+        role: str,
+        version: int,
+        train_instance_type: str,
+        train_max_run: int,
+        hyperparameters=None,
+    ) -> None:
+        super().__init__(
+            model=model, experiment=experiment, hyperparameters=hyperparameters
+        )
 
-    fitted: bool = False
-    tuned: bool = False
+        self.role = role
+        self.version = version
+        self.train_instance_type = train_instance_type
+        self.train_max_run = train_max_run
+
+        self.fitted = False
+        self.tuned = False
 
     def fit(self):
         self.fitted = True
@@ -24,16 +38,31 @@ class ModelEstimator(Estimator):
         self.tuned = True
 
 
-@dataclass
 class ExperimentEstimator(Estimator):
-    role: str
-    version: int
-    train_instance_type: str
-    train_max_run: int
-    sample: int
+    def __init__(
+        self,
+        model: str,
+        experiment: str,
+        role: str,
+        version: int,
+        sample: int,
+        train_instance_type: str,
+        train_max_run: int,
+        hyperparameters=None,
+    ) -> None:
 
-    fitted: bool = False
-    tuned: bool = False
+        super().__init__(
+            model=model, experiment=experiment, hyperparameters=hyperparameters
+        )
+
+        self.role = role
+        self.version = version
+        self.sample = sample
+        self.train_instance_type = train_instance_type
+        self.train_max_run = train_max_run
+
+        self.fitted = False
+        self.tuned = False
 
     def fit(self):
         self.fitted = True
