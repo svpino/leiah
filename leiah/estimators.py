@@ -34,17 +34,15 @@ class TensorFlowEstimator(Estimator):
     def fit(self):
         print(f"Fitting estimator {self.get_training_job_name()}...")
 
-        role = sagemaker.get_execution_role()
-        sagemaker_estimator = self.get_sagemaker_estimator(role=role)
-
+        sagemaker_estimator = self.get_sagemaker_estimator()
         return sagemaker_estimator.fit(self.channels, wait=False)
 
-    def get_sagemaker_estimator(self, role):
+    def get_sagemaker_estimator(self):
         sagemaker_estimator = TensorFlow(
             base_job_name=self.get_training_job_name(),
             source_dir=self.source_dir,
             entry_point=self.entry_point,
-            role=role,
+            role=sagemaker.get_execution_role(),
             hyperparameters=self.hyperparameters,
             train_instance_type=self.train_instance_type,
             train_instance_count=self.train_instance_count,
