@@ -41,14 +41,15 @@ models:
         max_parallel_jobs: 2
 
         ranges:
-          categorical: 
-            learning_rate:
-              - 1e-3
-                1e-5
-          continuous: 
-            epochs:
-              min: 20
-              max: 50
+          learning_rate:
+            type: categorical
+            values:
+              - 0.001
+              - 0.00001
+          epochs:
+            type: continuous
+            min: 20
+            max: 50
           
   model-02:
     hyperparameters:

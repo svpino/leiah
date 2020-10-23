@@ -116,6 +116,7 @@ def test_get_estimator():
         experiment="experiment-1",
         properties=dict(),
         hyperparameters={"hp1": 123},
+        ranges=None
     )
 
     assert estimator.model == "model-1"
@@ -131,6 +132,7 @@ def test_get_estimator_invalid_estimator():
             experiment="experiment-1",
             properties=dict(),
             hyperparameters=dict(),
+            ranges=None
         )
 
     with pytest.raises(InvalidEstimatorError):
@@ -140,6 +142,7 @@ def test_get_estimator_invalid_estimator():
             experiment="experiment-1",
             properties=dict(),
             hyperparameters=dict(),
+            ranges=None
         )
 
     with pytest.raises(InvalidEstimatorError):
@@ -149,6 +152,7 @@ def test_get_estimator_invalid_estimator():
             experiment="experiment-1",
             properties=dict(),
             hyperparameters=dict(),
+            ranges=None
         )
 
 

@@ -18,7 +18,30 @@ class Estimator(object):
         self.ranges = ranges
 
     def _get_hyperparameter_ranges(self):
-        print("Hello", self.ranges)
+        xyz = (
+            {
+                # "model": CategoricalParameter(["models.NASNetLargeModel", "models.ResNetModel"])
+                "learning_rate": CategoricalParameter([1e-2, 1e-3]),
+                "dense1": CategoricalParameter([128, 256, 512]),
+                "dense2": CategoricalParameter([64, 128, 256]),
+                "dropout": ContinuousParameter(0.1, 0.5),
+            },
+        )
+
+        if not self.ranges:
+            return dict()
+
+        print(self.ranges)
+
+        hyperparameter_ranges = dict()
+        for parameter, data in self.ranges.items():
+            if data["type"] == "categorical":
+                hyperparameter_ranges[parameter] = self._get_categorical_parameter(data)
+
+        return hyperparameter_ranges
+
+    def _get_categorical_parameter(self, data):
+        return CategoricalParameter(values=data["values"])
 
     def get_training_job_name(self):
         return f"training-{self.model}-{self.experiment}"
@@ -47,10 +70,14 @@ class TensorFlowEstimator(Estimator):
         train_volume_size: int = 10,
         debugger_hook_config: bool = False,
         channels: dict = None,
+        ranges: dict = None,
     ):
 
         super().__init__(
-            model=model, experiment=experiment, hyperparameters=hyperparameters
+            model=model,
+            experiment=experiment,
+            hyperparameters=hyperparameters,
+            ranges=ranges,
         )
 
         self.entry_point = entry_point

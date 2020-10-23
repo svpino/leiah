@@ -58,6 +58,7 @@ class Experiment(object):
             experiment=self.identifier,
             properties=get_properties(),
             hyperparameters=get_hyperparameters(),
+            ranges=data.get("ranges", None),
         )
 
     def process(self):
@@ -166,7 +167,7 @@ class Descriptor(object):
         return self.__models
 
 
-def _get_estimator(estimator, model, experiment, properties, hyperparameters):
+def _get_estimator(estimator, model, experiment, properties, hyperparameters, ranges):
     identifiers = estimator.strip().split(".")
     class_name = identifiers[-1]
     module_name = ".".join(identifiers[:-1])
@@ -186,8 +187,9 @@ def _get_estimator(estimator, model, experiment, properties, hyperparameters):
             return class_(
                 model=model,
                 experiment=experiment,
-                **properties,
                 hyperparameters=hyperparameters,
+                ranges=ranges,
+                **properties,
             )
         except TypeError as e:
             raise EstimatorMissingPropertyError(estimator, e)
