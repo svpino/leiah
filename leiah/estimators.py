@@ -1,7 +1,9 @@
 import sagemaker
 
 from sagemaker.tensorflow import TensorFlow
-from sagemaker.tuner import IntegerParameter, CategoricalParameter, ContinuousParameter
+from sagemaker.tuner import (
+    HyperparameterTuner,
+)
 
 
 class Estimator(object):
@@ -16,32 +18,6 @@ class Estimator(object):
         self.experiment = experiment
         self.hyperparameters = hyperparameters or dict()
         self.ranges = ranges
-
-    def _get_hyperparameter_ranges(self):
-        xyz = (
-            {
-                # "model": CategoricalParameter(["models.NASNetLargeModel", "models.ResNetModel"])
-                "learning_rate": CategoricalParameter([1e-2, 1e-3]),
-                "dense1": CategoricalParameter([128, 256, 512]),
-                "dense2": CategoricalParameter([64, 128, 256]),
-                "dropout": ContinuousParameter(0.1, 0.5),
-            },
-        )
-
-        if not self.ranges:
-            return dict()
-
-        print(self.ranges)
-
-        hyperparameter_ranges = dict()
-        for parameter, data in self.ranges.items():
-            if data["type"] == "categorical":
-                hyperparameter_ranges[parameter] = self._get_categorical_parameter(data)
-
-        return hyperparameter_ranges
-
-    def _get_categorical_parameter(self, data):
-        return CategoricalParameter(values=data["values"])
 
     def get_training_job_name(self):
         return f"training-{self.model}-{self.experiment}"
@@ -101,6 +77,29 @@ class TensorFlowEstimator(Estimator):
         sagemaker_estimator = self.get_sagemaker_estimator()
         return sagemaker_estimator.fit(self.channels, wait=False)
 
+    def tune(self, hyperparameter_ranges: dict):
+        print(f"Tuning estimator {self.get_tuning_job_name()}...")
+
+        sagemaker_estimator = self.get_sagemaker_estimator()
+
+        tuner = HyperparameterTuner(
+            base_tuning_job_name=self.get_training_job_name(),
+            estimator=sagemaker_estimator,
+            objective_metric_name="val_loss",
+            objective_type="Minimize",
+            hyperparameter_ranges=hyperparameter_ranges,
+            metric_definitions=[
+                {"Name": "loss", "Regex": " loss: ([0-9\\.]+)"},
+                {"Name": "accuracy", "Regex": " accuracy: ([0-9\\.]+)"},
+                {"Name": "val_loss", "Regex": " val_loss: ([0-9\\.]+)"},
+                {"Name": "val_accuracy", "Regex": " val_accuracy: ([0-9\\.]+)"},
+            ],
+            # max_jobs=max_jobs,
+            # max_parallel_jobs=max_parallel_jobs,
+        )
+
+        return tuner.fit(self.channels)
+
     def get_sagemaker_estimator(self):
         sagemaker_estimator = TensorFlow(
             base_job_name=self.get_training_job_name(),
@@ -123,3 +122,44 @@ class TensorFlowEstimator(Estimator):
         )
 
         return sagemaker_estimator
+
+
+"""
+        tuner = HyperparameterTuner(
+            base_tuning_job_name=self.hyperparameter_tunning_job_name,
+            estimator=self.get_estimator(),
+            objective_metric_name='val_loss',
+            objective_type = 'Minimize',
+            hyperparameter_ranges=hyperparameter_ranges,
+            metric_definitions=[
+                {
+                    'Name': 'loss',
+                    'Regex': ' loss: ([0-9\\.]+)'
+                },
+                {
+                    'Name': 'accuracy',
+                    'Regex': ' accuracy: ([0-9\\.]+)'
+                },
+                {
+                    'Name': 'val_loss', 
+                    'Regex': ' val_loss: ([0-9\\.]+)'
+                },
+                {
+                    'Name': 'val_accuracy', 
+                    'Regex': ' val_accuracy: ([0-9\\.]+)'
+                },
+            ],
+            max_jobs=max_jobs,
+            max_parallel_jobs=max_parallel_jobs
+        )
+    
+        training_input, validation_input, testing_input = self._get_inputs(self.brand_id)
+
+        return tuner.fit(
+            {
+                "training": training_input,
+                "validation": validation_input,
+                "testing": testing_input,
+            }
+        )
+"""

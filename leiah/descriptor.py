@@ -1,75 +1,9 @@
 from pathlib import Path
 import yaml
-import importlib
 
 from yaml.scanner import ScannerError
-
-from leiah.exceptions import (
-    EstimatorMissingPropertyError,
-    ExperimentNotFoundError,
-    InvalidDescriptorError,
-    InvalidEstimatorError,
-)
-
-
-class Experiment(object):
-    def __init__(self, model: object, identifier: str, type: str, data: dict) -> None:
-        self.model = model
-        self.identifier = identifier
-        self.type = type
-
-        self._initialize(data)
-
-    def _initialize(self, data):
-        def get_properties():
-            properties = dict()
-            if (
-                "estimator" in self.model.data
-                and "properties" in self.model.data["estimator"]
-            ):
-                properties.update(self.model.data["estimator"]["properties"])
-
-            if "estimator" in data and "properties" in data["estimator"]:
-                properties.update(data["estimator"]["properties"])
-
-            return properties
-
-        def get_hyperparameters():
-            hyperparameters = dict()
-            if "hyperparameters" in self.model.data:
-                hyperparameters.update(self.model.data["hyperparameters"])
-
-            if "hyperparameters" in data:
-                hyperparameters.update(data["hyperparameters"])
-
-            return hyperparameters
-
-        self.description = data.get("description", None)
-
-        estimator_classname = (
-            data["estimator"]["classname"]
-            if "estimator" in data
-            else self.model.data["estimator"]["classname"]
-        )
-
-        self.estimator = _get_estimator(
-            estimator_classname,
-            model=self.model.name,
-            experiment=self.identifier,
-            properties=get_properties(),
-            hyperparameters=get_hyperparameters(),
-            ranges=data.get("ranges", None),
-        )
-
-    def process(self):
-        if self.type == "training":
-            self.estimator.fit()
-        elif self.type == "tuning":
-            self.estimator.tune()
-        else:
-            raise InvalidDescriptorError(
-                f'Experiment type "{self.type}" is not supported.'
-            )
+from leiah.experiments import TrainingExperiment, TuningExperiment
+from leiah.exceptions import DescriptorError
 
 
 class Model(object):
@@ -82,9 +16,19 @@ class Model(object):
             for identifier, data in data["experiments"].items():
                 identifier = str(identifier)
                 type = data.get("type", "training")
-                self.experiments[identifier] = Experiment(
-                    model=self, identifier=identifier, type=type, data=data
-                )
+
+                if type == "training":
+                    experiment = TrainingExperiment(
+                        model=self, identifier=identifier, data=data
+                    )
+                elif type == "tuning":
+                    experiment = TuningExperiment(
+                        model=self, identifier=identifier, data=data
+                    )
+                else:
+                    raise DescriptorError(f'Experiment type "{type}" is not supported.')
+
+                self.experiments[identifier] = experiment
 
 
 class Descriptor(object):
@@ -96,7 +40,7 @@ class Descriptor(object):
         elif isinstance(descriptor, str) or isinstance(descriptor, Path):
             self._load_descriptor(descriptor_file_path=descriptor)
         else:
-            raise InvalidDescriptorError(
+            raise DescriptorError(
                 "Invalid descriptor source. Must be a dictionary, or "
                 "the path of the descriptor file."
             )
@@ -119,13 +63,13 @@ class Descriptor(object):
             try:
                 model = self.models[identifier[0]]
             except KeyError:
-                raise ExperimentNotFoundError(name)
+                raise DescriptorError(f'Experiment "{name}" was not found')
 
             if len(identifier) == 2:
                 try:
                     experiment = model.experiments[identifier[1]]
                 except KeyError:
-                    raise ExperimentNotFoundError(name)
+                    raise DescriptorError(f'Experiment "{name}" was not found')
                 else:
                     result.append(experiment)
             else:
@@ -141,18 +85,18 @@ class Descriptor(object):
         except FileNotFoundError:
             raise
         except ScannerError:
-            raise InvalidDescriptorError("The specified file is not a valid descriptor")
+            raise DescriptorError("The specified file is not a valid descriptor")
         else:
             self._parse_descriptor(data)
 
     def _parse_descriptor(self, data: dict()) -> None:
         if not isinstance(data, dict):
-            raise InvalidDescriptorError("The specified file is not a valid descriptor")
+            raise DescriptorError("The specified file is not a valid descriptor")
 
         try:
             descriptor_models = data["models"]
         except KeyError:
-            raise InvalidDescriptorError(
+            raise DescriptorError(
                 'Descriptor file is missing the root element "models".'
             )
         else:
@@ -167,29 +111,3 @@ class Descriptor(object):
         return self.__models
 
 
-def _get_estimator(estimator, model, experiment, properties, hyperparameters, ranges):
-    identifiers = estimator.strip().split(".")
-    class_name = identifiers[-1]
-    module_name = ".".join(identifiers[:-1])
-
-    if not module_name:
-        raise InvalidEstimatorError(estimator)
-
-    try:
-        module = importlib.import_module(module_name)
-        class_ = getattr(module, class_name)
-    except ModuleNotFoundError:
-        raise InvalidEstimatorError(estimator)
-    except AttributeError:
-        raise InvalidEstimatorError(estimator)
-    else:
-        try:
-            return class_(
-                model=model,
-                experiment=experiment,
-                hyperparameters=hyperparameters,
-                ranges=ranges,
-                **properties,
-            )
-        except TypeError as e:
-            raise EstimatorMissingPropertyError(estimator, e)

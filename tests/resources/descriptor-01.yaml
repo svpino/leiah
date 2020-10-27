@@ -40,7 +40,7 @@ models:
         max_jobs: 10
         max_parallel_jobs: 2
 
-        ranges:
+        hyperparameter_ranges:
           learning_rate:
             type: categorical
             values:
@@ -48,8 +48,8 @@ models:
               - 0.00001
           epochs:
             type: continuous
-            min: 20
-            max: 50
+            min_value: 20
+            max_value: 50
           
   model-02:
     hyperparameters:

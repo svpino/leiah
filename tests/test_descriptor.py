@@ -1,14 +1,12 @@
 import pytest
 from pathlib import Path
 
-from leiah.descriptor import Descriptor, Experiment, Model, _get_estimator
-from leiah.exceptions import (
-    EstimatorMissingPropertyError,
-    InvalidDescriptorError,
-    InvalidEstimatorError,
-    ExperimentNotFoundError,
+from leiah.descriptor import (
+    Descriptor,
+    Model,
 )
-
+from leiah.experiments import Experiment
+from leiah.exceptions import DescriptorError
 from tests.resources.estimators import ModelEstimator, ExperimentEstimator
 
 
@@ -54,10 +52,6 @@ def test_experiments(descriptor):
     assert isinstance(descriptor.models["model-01"].experiments["2"], Experiment)
     assert isinstance(descriptor.models["model-01"].experiments["hpt-01"], Experiment)
     assert isinstance(descriptor.models["model-02"].experiments["1.0.1"], Experiment)
-
-    descriptor.models["model-01"].experiments[
-        "hpt-01"
-    ].estimator._get_hyperparameter_ranges()
 
 
 def test_experiments_estimator(descriptor):
@@ -109,53 +103,6 @@ def test_experiments_estimator_hyperparameters_inheritance(descriptor):
     ), "Hyperparameter should have been overwritten"
 
 
-def test_get_estimator():
-    estimator = _get_estimator(
-        estimator="tests.resources.estimators.DummyEstimator",
-        model="model-1",
-        experiment="experiment-1",
-        properties=dict(),
-        hyperparameters={"hp1": 123},
-        ranges=None
-    )
-
-    assert estimator.model == "model-1"
-    assert estimator.experiment == "experiment-1"
-    assert estimator.hyperparameters["hp1"] == 123
-
-
-def test_get_estimator_invalid_estimator():
-    with pytest.raises(InvalidEstimatorError):
-        _get_estimator(
-            estimator="Estimator",
-            model="model-1",
-            experiment="experiment-1",
-            properties=dict(),
-            hyperparameters=dict(),
-            ranges=None
-        )
-
-    with pytest.raises(InvalidEstimatorError):
-        _get_estimator(
-            estimator="invalid.module.Estimator",
-            model="model-1",
-            experiment="experiment-1",
-            properties=dict(),
-            hyperparameters=dict(),
-            ranges=None
-        )
-
-    with pytest.raises(InvalidEstimatorError):
-        _get_estimator(
-            estimator="tests.resources.estimators.Invalid",
-            model="model-1",
-            experiment="experiment-1",
-            properties=dict(),
-            hyperparameters=dict(),
-            ranges=None
-        )
-
-
 def test_no_models(descriptor_base_path):
     descriptor_file_path = descriptor_base_path / "descriptor-02.yaml"
     descriptor = Descriptor(descriptor_file_path)
@@ -169,27 +116,27 @@ def test_descriptor_not_found():
 
 
 def test_invalid_descriptor_non_yaml_file(descriptor_base_path):
-    with pytest.raises(InvalidDescriptorError):
+    with pytest.raises(DescriptorError):
         Descriptor(descriptor_base_path / "invalid-descriptor-1.yaml")
 
 
 def test_invalid_descriptor_missing_root(descriptor_base_path):
-    with pytest.raises(InvalidDescriptorError):
+    with pytest.raises(DescriptorError):
         Descriptor(descriptor_base_path / "invalid-descriptor-2.yaml")
 
 
 def test_invalid_descriptor_invalid_yaml(descriptor_base_path):
-    with pytest.raises(InvalidDescriptorError):
+    with pytest.raises(DescriptorError):
         Descriptor(descriptor_base_path / "invalid-descriptor-4.yaml")
 
 
 def test_invalid_descriptor_source():
-    with pytest.raises(InvalidDescriptorError):
+    with pytest.raises(DescriptorError):
         Descriptor(123)
 
 
 def test_estimator_missing_properties():
-    with pytest.raises(EstimatorMissingPropertyError):
+    with pytest.raises(DescriptorError):
         Descriptor(
             {
                 "models": {
@@ -222,12 +169,12 @@ def test_get_experiments_single_experiment_multiple_separators(descriptor):
 
 
 def test_get_experiments_invalid_experiment_name(descriptor):
-    with pytest.raises(ExperimentNotFoundError):
+    with pytest.raises(DescriptorError):
         descriptor._get_experiments(experiments="unexistent.1")
 
 
 def test_get_experiments_invalid_experiment_identifier(descriptor):
-    with pytest.raises(ExperimentNotFoundError):
+    with pytest.raises(DescriptorError):
         descriptor._get_experiments(experiments="model-01.unexistent")
 
 
@@ -275,20 +222,17 @@ def test_process_tunning(descriptor):
 
 
 def test_process_invalid_experiment_type():
-    model = Model(
-        name="model1",
-        data={
-            "experiments": {
-                "experiment1": {
-                    "type": "invalid",
-                    "estimator": {
-                        "classname": "tests.resources.estimators.DummyEstimator"
-                    },
+    with pytest.raises(DescriptorError):
+        Model(
+            name="model1",
+            data={
+                "experiments": {
+                    "experiment1": {
+                        "type": "invalid",
+                        "estimator": {
+                            "classname": "tests.resources.estimators.DummyEstimator"
+                        },
+                    }
                 }
-            }
-        },
-    )
-    experiment = model.experiments["experiment1"]
-
-    with pytest.raises(InvalidDescriptorError):
-        experiment.process()
+            },
+        )
