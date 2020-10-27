@@ -205,23 +205,7 @@ def test_get_all_experiments(descriptor):
     assert len(experiments) == 4
 
 
-def test_process_training(descriptor):
-    estimator = descriptor.models["model-01"].experiments["1"].estimator
-
-    assert estimator.fitted is False
-    descriptor.process(experiments="model-01.1")
-    assert estimator.fitted is True
-
-
-def test_process_tunning(descriptor):
-    estimator = descriptor.models["model-01"].experiments["hpt-01"].estimator
-
-    assert estimator.tuned is False
-    descriptor.process(experiments="model-01.hpt-01")
-    assert estimator.tuned is True
-
-
-def test_process_invalid_experiment_type():
+def test_invalid_experiment_type():
     with pytest.raises(DescriptorError):
         Model(
             name="model1",
@@ -236,3 +220,19 @@ def test_process_invalid_experiment_type():
                 }
             },
         )
+
+
+def test_process_training(descriptor):
+    estimator = descriptor.models["model-01"].experiments["1"].estimator
+
+    assert estimator.fitted is False
+    descriptor.process(experiments="model-01.1")
+    assert estimator.fitted is True
+
+
+def test_process_tunning(descriptor):
+    estimator = descriptor.models["model-01"].experiments["hpt-01"].estimator
+
+    assert estimator.tuned is False
+    descriptor.process(experiments="model-01.hpt-01")
+    assert estimator.tuned is True

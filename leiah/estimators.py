@@ -7,23 +7,48 @@ from sagemaker.tuner import (
 
 
 class Estimator(object):
-    def __init__(
-        self,
-        model: str,
-        experiment: str,
-        hyperparameters: dict = None,
-        ranges: dict = None,
-    ):
+    def __init__(self, model: str, experiment: str, hyperparameters: dict = None):
         self.model = model
         self.experiment = experiment
         self.hyperparameters = hyperparameters or dict()
-        self.ranges = ranges
+
+    def fit(self):
+        print(f"Fitting estimator {self.get_training_job_name()}...")
+
+        sagemaker_estimator = self.get_sagemaker_estimator()
+        return sagemaker_estimator.fit(self.channels, wait=False)
+
+    def tune(self, max_jobs: int, max_parallel_jobs: int, hyperparameter_ranges: dict):
+        print(f"Tuning estimator {self.get_tuning_job_name()}...")
+
+        sagemaker_estimator = self.get_sagemaker_estimator()
+
+        tuner = HyperparameterTuner(
+            base_tuning_job_name=self.get_tuning_job_name(),
+            estimator=sagemaker_estimator,
+            objective_metric_name="val_loss",
+            objective_type="Minimize",
+            hyperparameter_ranges=hyperparameter_ranges,
+            metric_definitions=[
+                {"Name": "loss", "Regex": " loss: ([0-9\\.]+)"},
+                {"Name": "accuracy", "Regex": " accuracy: ([0-9\\.]+)"},
+                {"Name": "val_loss", "Regex": " val_loss: ([0-9\\.]+)"},
+                {"Name": "val_accuracy", "Regex": " val_accuracy: ([0-9\\.]+)"},
+            ],
+            max_jobs=max_jobs,
+            max_parallel_jobs=max_parallel_jobs,
+        )
+
+        return tuner.fit(self.channels)
 
     def get_training_job_name(self):
         return f"training-{self.model}-{self.experiment}"
 
     def get_tuning_job_name(self):
         return f"tuning-{self.model}-{self.experiment}"
+
+    def get_sagemaker_estimator(self):
+        raise NotImplementedError()
 
 
 class TensorFlowEstimator(Estimator):
@@ -46,14 +71,11 @@ class TensorFlowEstimator(Estimator):
         train_volume_size: int = 10,
         debugger_hook_config: bool = False,
         channels: dict = None,
-        ranges: dict = None,
     ):
-
         super().__init__(
             model=model,
             experiment=experiment,
             hyperparameters=hyperparameters,
-            ranges=ranges,
         )
 
         self.entry_point = entry_point
@@ -70,35 +92,6 @@ class TensorFlowEstimator(Estimator):
         self.train_volume_size = train_volume_size
         self.debugger_hook_config = debugger_hook_config
         self.channels = channels
-
-    def fit(self):
-        print(f"Fitting estimator {self.get_training_job_name()}...")
-
-        sagemaker_estimator = self.get_sagemaker_estimator()
-        return sagemaker_estimator.fit(self.channels, wait=False)
-
-    def tune(self, hyperparameter_ranges: dict):
-        print(f"Tuning estimator {self.get_tuning_job_name()}...")
-
-        sagemaker_estimator = self.get_sagemaker_estimator()
-
-        tuner = HyperparameterTuner(
-            base_tuning_job_name=self.get_training_job_name(),
-            estimator=sagemaker_estimator,
-            objective_metric_name="val_loss",
-            objective_type="Minimize",
-            hyperparameter_ranges=hyperparameter_ranges,
-            metric_definitions=[
-                {"Name": "loss", "Regex": " loss: ([0-9\\.]+)"},
-                {"Name": "accuracy", "Regex": " accuracy: ([0-9\\.]+)"},
-                {"Name": "val_loss", "Regex": " val_loss: ([0-9\\.]+)"},
-                {"Name": "val_accuracy", "Regex": " val_accuracy: ([0-9\\.]+)"},
-            ],
-            # max_jobs=max_jobs,
-            # max_parallel_jobs=max_parallel_jobs,
-        )
-
-        return tuner.fit(self.channels)
 
     def get_sagemaker_estimator(self):
         sagemaker_estimator = TensorFlow(
@@ -122,44 +115,3 @@ class TensorFlowEstimator(Estimator):
         )
 
         return sagemaker_estimator
-
-
-"""
-        tuner = HyperparameterTuner(
-            base_tuning_job_name=self.hyperparameter_tunning_job_name,
-            estimator=self.get_estimator(),
-            objective_metric_name='val_loss',
-            objective_type = 'Minimize',
-            hyperparameter_ranges=hyperparameter_ranges,
-            metric_definitions=[
-                {
-                    'Name': 'loss',
-                    'Regex': ' loss: ([0-9\\.]+)'
-                },
-                {
-                    'Name': 'accuracy',
-                    'Regex': ' accuracy: ([0-9\\.]+)'
-                },
-                {
-                    'Name': 'val_loss', 
-                    'Regex': ' val_loss: ([0-9\\.]+)'
-                },
-                {
-                    'Name': 'val_accuracy', 
-                    'Regex': ' val_accuracy: ([0-9\\.]+)'
-                },
-            ],
-            max_jobs=max_jobs,
-            max_parallel_jobs=max_parallel_jobs
-        )
-    
-        training_input, validation_input, testing_input = self._get_inputs(self.brand_id)
-
-        return tuner.fit(
-            {
-                "training": training_input,
-                "validation": validation_input,
-                "testing": testing_input,
-            }
-        )
-"""

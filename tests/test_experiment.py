@@ -11,8 +11,12 @@ from leiah.exceptions import DescriptorError
 
 
 @pytest.fixture
-def tuning_experiment():
-    model = Model("model1", data={})
+def model():
+    return Model("model1", data={})
+
+
+@pytest.fixture
+def tuning_experiment(model):
     return TuningExperiment(
         model=model,
         identifier="experiment1",
@@ -176,8 +180,7 @@ def test_hyperparameter_ranges(tuning_experiment):
     assert len(tuning_experiment.hyperparameter_ranges) == 3
 
 
-def test_hyperparameter_ranges_missing_parameter_type():
-    model = Model("model1", data={})
+def test_hyperparameter_ranges_missing_parameter_type(model):
     with pytest.raises(DescriptorError):
         TuningExperiment(
             model=model,
@@ -193,8 +196,7 @@ def test_hyperparameter_ranges_missing_parameter_type():
         )
 
 
-def test_hyperparameter_ranges_invalid_parameter_type():
-    model = Model("model1", data={})
+def test_hyperparameter_ranges_invalid_parameter_type(model):
     with pytest.raises(DescriptorError):
         TuningExperiment(
             model=model,
@@ -208,3 +210,57 @@ def test_hyperparameter_ranges_invalid_parameter_type():
                 },
             },
         )
+
+
+def test_tuning_experiment_max_jobs(model):
+    experiment = TuningExperiment(
+        model=model,
+        identifier="experiment1",
+        data={
+            "estimator": {
+                "classname": "tests.resources.estimators.DummyEstimator",
+            },
+            "max_jobs": 2,
+        },
+    )
+
+    assert experiment.max_jobs == 2
+    assert (
+        experiment.max_parallel_jobs == 1
+    ), "The max number of parallel jobs should be 1 by default"
+
+    experiment.process()
+    assert experiment.estimator.max_jobs == 2
+    assert (
+        experiment.estimator.max_parallel_jobs == 1
+    ), "The max number of parallel jobs should be 1 by default"
+
+
+def test_tuning_experiment_max_parallel_jobs(model):
+    experiment = TuningExperiment(
+        model=model,
+        identifier="experiment1",
+        data={
+            "estimator": {
+                "classname": "tests.resources.estimators.DummyEstimator",
+            },
+            "max_parallel_jobs": 2,
+        },
+    )
+
+    assert experiment.max_jobs == 1, "The max number of jobs should be 1 by default"
+    assert experiment.max_parallel_jobs == 2
+
+    experiment.process()
+    assert (
+        experiment.estimator.max_jobs == 1
+    ), "The max number of jobs should be 1 by default"
+    assert experiment.estimator.max_parallel_jobs == 2
+
+
+def test_tuning_experiment_hyperparameter_ranges(tuning_experiment):
+    tuning_experiment.process()
+    assert (
+        tuning_experiment.estimator.hyperparameter_ranges
+        == tuning_experiment.hyperparameter_ranges
+    )

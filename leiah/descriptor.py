@@ -109,5 +109,3 @@ class Descriptor(object):
     @property
     def models(self) -> dict:
         return self.__models
-
-

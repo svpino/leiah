@@ -53,12 +53,9 @@ class Experiment(object):
             experiment=self.identifier,
             properties=get_properties(),
             hyperparameters=get_hyperparameters(),
-            ranges=data.get("ranges", None),
         )
 
-    def _get_estimator(
-        self, estimator, model, experiment, properties, hyperparameters, ranges
-    ):
+    def _get_estimator(self, estimator, model, experiment, properties, hyperparameters):
         identifiers = estimator.strip().split(".")
         class_name = identifiers[-1]
         module_name = ".".join(identifiers[:-1])
@@ -79,7 +76,6 @@ class Experiment(object):
                     model=model,
                     experiment=experiment,
                     hyperparameters=hyperparameters,
-                    ranges=ranges,
                     **properties,
                 )
             except TypeError as e:
@@ -97,12 +93,19 @@ class TuningExperiment(Experiment):
     def __init__(self, model: object, identifier: str, data: dict) -> None:
         super().__init__(model=model, identifier=identifier, data=data)
 
+        self.max_jobs = data.get("max_jobs", 1)
+        self.max_parallel_jobs = data.get("max_parallel_jobs", 1)
+
         self.hyperparameter_ranges = self._get_hyperparameter_ranges(
             data.get("hyperparameter_ranges", None)
         )
 
     def process(self):
-        self.estimator.tune()
+        self.estimator.tune(
+            max_jobs=self.max_jobs,
+            max_parallel_jobs=self.max_parallel_jobs,
+            hyperparameter_ranges=self.hyperparameter_ranges,
+        )
 
     def _get_hyperparameter_ranges(self, hyperparameter_ranges):
         if not hyperparameter_ranges:
