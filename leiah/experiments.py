@@ -93,18 +93,17 @@ class TuningExperiment(Experiment):
     def __init__(self, model: object, identifier: str, data: dict) -> None:
         super().__init__(model=model, identifier=identifier, data=data)
 
-        self.max_jobs = data.get("max_jobs", 1)
-        self.max_parallel_jobs = data.get("max_parallel_jobs", 1)
-
         self.hyperparameter_ranges = self._get_hyperparameter_ranges(
             data.get("hyperparameter_ranges", None)
         )
 
+        self.attributes = data
+        if "hyperparameter_ranges" in self.attributes:
+            del self.attributes["hyperparameter_ranges"]
+
     def process(self):
         self.estimator.tune(
-            max_jobs=self.max_jobs,
-            max_parallel_jobs=self.max_parallel_jobs,
-            hyperparameter_ranges=self.hyperparameter_ranges,
+            hyperparameter_ranges=self.hyperparameter_ranges, **self.attributes
         )
 
     def _get_hyperparameter_ranges(self, hyperparameter_ranges):

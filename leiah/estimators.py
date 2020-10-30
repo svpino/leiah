@@ -18,28 +18,18 @@ class Estimator(object):
         sagemaker_estimator = self.get_sagemaker_estimator()
         return sagemaker_estimator.fit(self.channels, wait=False)
 
-    def tune(self, max_jobs: int, max_parallel_jobs: int, hyperparameter_ranges: dict):
+    def tune(
+        self,
+        hyperparameter_ranges: dict,
+        **kwargs,
+    ):
         print(f"Tuning estimator {self.get_tuning_job_name()}...")
 
-        sagemaker_estimator = self.get_sagemaker_estimator()
-
-        tuner = HyperparameterTuner(
-            base_tuning_job_name=self.get_tuning_job_name(),
-            estimator=sagemaker_estimator,
-            objective_metric_name="val_loss",
-            objective_type="Minimize",
-            hyperparameter_ranges=hyperparameter_ranges,
-            metric_definitions=[
-                {"Name": "loss", "Regex": " loss: ([0-9\\.]+)"},
-                {"Name": "accuracy", "Regex": " accuracy: ([0-9\\.]+)"},
-                {"Name": "val_loss", "Regex": " val_loss: ([0-9\\.]+)"},
-                {"Name": "val_accuracy", "Regex": " val_accuracy: ([0-9\\.]+)"},
-            ],
-            max_jobs=max_jobs,
-            max_parallel_jobs=max_parallel_jobs,
+        sagemaker_tuner = self.get_sagemaker_tuner(
+            hyperparameter_ranges=hyperparameter_ranges, **kwargs
         )
 
-        return tuner.fit(self.channels)
+        return sagemaker_tuner.fit(self.channels)
 
     def get_training_job_name(self):
         return f"training-{self.model}-{self.experiment}"
@@ -47,7 +37,25 @@ class Estimator(object):
     def get_tuning_job_name(self):
         return f"tuning-{self.model}-{self.experiment}"
 
+    def get_sagemaker_tuner(self, hyperparameter_ranges: dict, **kwargs):
+        return HyperparameterTuner(
+            base_tuning_job_name=self.get_tuning_job_name(),
+            estimator=self.get_sagemaker_estimator(),
+            objective_metric_name=self.get_tuner_objective_metric_name(),
+            objective_type=kwargs.get("objective_type", "Minimize"),
+            hyperparameter_ranges=hyperparameter_ranges,
+            metric_definitions=self.get_tuner_metric_definitions(),
+            max_jobs=kwargs.get("max_jobs", 1),
+            max_parallel_jobs=kwargs.get("max_parallel_jobs", 1),
+        )
+
     def get_sagemaker_estimator(self):
+        raise NotImplementedError()
+
+    def get_tuner_objective_metric_name(self):
+        raise NotImplementedError()
+
+    def get_tuner_metric_definitions(self):
         raise NotImplementedError()
 
 
@@ -115,3 +123,14 @@ class TensorFlowEstimator(Estimator):
         )
 
         return sagemaker_estimator
+
+    def get_tuner_objective_metric_name(self):
+        return "val_loss"
+
+    def get_tuner_metric_definitions(self):
+        return [
+            {"Name": "loss", "Regex": " loss: ([0-9\\.]+)"},
+            {"Name": "accuracy", "Regex": " accuracy: ([0-9\\.]+)"},
+            {"Name": "val_loss", "Regex": " val_loss: ([0-9\\.]+)"},
+            {"Name": "val_accuracy", "Regex": " val_accuracy: ([0-9\\.]+)"},
+        ]

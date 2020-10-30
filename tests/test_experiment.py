@@ -212,7 +212,7 @@ def test_hyperparameter_ranges_invalid_parameter_type(model):
         )
 
 
-def test_tuning_experiment_max_jobs(model):
+def test_tuning_experiment_kwargs(model):
     experiment = TuningExperiment(
         model=model,
         identifier="experiment1",
@@ -220,42 +220,16 @@ def test_tuning_experiment_max_jobs(model):
             "estimator": {
                 "classname": "tests.resources.estimators.DummyEstimator",
             },
-            "max_jobs": 2,
+            "max_jobs": 10,
+            "max_parallel_jobs": 4,
+            "objective_type": "Maximize",
         },
     )
 
-    assert experiment.max_jobs == 2
-    assert (
-        experiment.max_parallel_jobs == 1
-    ), "The max number of parallel jobs should be 1 by default"
-
     experiment.process()
-    assert experiment.estimator.max_jobs == 2
-    assert (
-        experiment.estimator.max_parallel_jobs == 1
-    ), "The max number of parallel jobs should be 1 by default"
-
-
-def test_tuning_experiment_max_parallel_jobs(model):
-    experiment = TuningExperiment(
-        model=model,
-        identifier="experiment1",
-        data={
-            "estimator": {
-                "classname": "tests.resources.estimators.DummyEstimator",
-            },
-            "max_parallel_jobs": 2,
-        },
-    )
-
-    assert experiment.max_jobs == 1, "The max number of jobs should be 1 by default"
-    assert experiment.max_parallel_jobs == 2
-
-    experiment.process()
-    assert (
-        experiment.estimator.max_jobs == 1
-    ), "The max number of jobs should be 1 by default"
-    assert experiment.estimator.max_parallel_jobs == 2
+    assert experiment.estimator.kwargs["max_jobs"] == 10
+    assert experiment.estimator.kwargs["max_parallel_jobs"] == 4
+    assert experiment.estimator.kwargs["objective_type"] == "Maximize"
 
 
 def test_tuning_experiment_hyperparameter_ranges(tuning_experiment):

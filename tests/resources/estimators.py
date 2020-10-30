@@ -8,15 +8,22 @@ class DummyEstimator(Estimator):
         )
 
         self.tuned = False
-        self.max_jobs = None
-        self.max_parallel_jobs = None
+        self.kwargs = None
         self.hyperparameter_ranges = None
 
-    def tune(self, max_jobs: int, max_parallel_jobs: int, hyperparameter_ranges: dict):
+    def tune(self, hyperparameter_ranges: dict, **kwargs):
         self.tuned = True
-        self.max_jobs = max_jobs
-        self.max_parallel_jobs = max_parallel_jobs
+        self.kwargs = kwargs
         self.hyperparameter_ranges = hyperparameter_ranges
+
+    def get_sagemaker_estimator(self):
+        return None
+
+    def get_tuner_objective_metric_name(self):
+        return "dummy"
+
+    def get_tuner_metric_definitions(self):
+        return [{"dummy": "value"}]
 
 
 class ModelEstimator(Estimator):
@@ -47,7 +54,7 @@ class ModelEstimator(Estimator):
     def fit(self):
         self.fitted = True
 
-    def tune(self, max_jobs: int, max_parallel_jobs: int, hyperparameter_ranges: dict):
+    def tune(self, hyperparameter_ranges: dict, **kwargs):
         self.tuned = True
 
 
@@ -82,5 +89,5 @@ class ExperimentEstimator(Estimator):
     def fit(self):
         self.fitted = True
 
-    def tune(self, max_jobs: int, max_parallel_jobs: int, hyperparameter_ranges: dict):
+    def tune(self, hyperparameter_ranges: dict, **kwargs):
         self.tuned = True
