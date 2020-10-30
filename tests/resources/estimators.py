@@ -9,12 +9,10 @@ class DummyEstimator(Estimator):
 
         self.tuned = False
         self.kwargs = None
-        self.hyperparameter_ranges = None
 
-    def tune(self, hyperparameter_ranges: dict, **kwargs):
+    def tune(self, **kwargs):
         self.tuned = True
         self.kwargs = kwargs
-        self.hyperparameter_ranges = hyperparameter_ranges
 
     def get_sagemaker_estimator(self):
         return None
@@ -54,7 +52,7 @@ class ModelEstimator(Estimator):
     def fit(self):
         self.fitted = True
 
-    def tune(self, hyperparameter_ranges: dict, **kwargs):
+    def tune(self, **kwargs):
         self.tuned = True
 
 
@@ -89,5 +87,5 @@ class ExperimentEstimator(Estimator):
     def fit(self):
         self.fitted = True
 
-    def tune(self, hyperparameter_ranges: dict, **kwargs):
+    def tune(self, **kwargs):
         self.tuned = True

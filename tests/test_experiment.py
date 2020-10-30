@@ -234,7 +234,6 @@ def test_tuning_experiment_kwargs(model):
 
 def test_tuning_experiment_hyperparameter_ranges(tuning_experiment):
     tuning_experiment.process()
-    assert (
-        tuning_experiment.estimator.hyperparameter_ranges
-        == tuning_experiment.hyperparameter_ranges
+    assert len(tuning_experiment.estimator.kwargs["hyperparameter_ranges"]) == len(
+        tuning_experiment.hyperparameter_ranges
     )

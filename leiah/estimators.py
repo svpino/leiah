@@ -18,17 +18,9 @@ class Estimator(object):
         sagemaker_estimator = self.get_sagemaker_estimator()
         return sagemaker_estimator.fit(self.channels, wait=False)
 
-    def tune(
-        self,
-        hyperparameter_ranges: dict,
-        **kwargs,
-    ):
+    def tune(self, **kwargs):
         print(f"Tuning estimator {self.get_tuning_job_name()}...")
-
-        sagemaker_tuner = self.get_sagemaker_tuner(
-            hyperparameter_ranges=hyperparameter_ranges, **kwargs
-        )
-
+        sagemaker_tuner = self.get_sagemaker_tuner(**kwargs)
         return sagemaker_tuner.fit(self.channels)
 
     def get_training_job_name(self):
@@ -37,13 +29,13 @@ class Estimator(object):
     def get_tuning_job_name(self):
         return f"tuning-{self.model}-{self.experiment}"
 
-    def get_sagemaker_tuner(self, hyperparameter_ranges: dict, **kwargs):
+    def get_sagemaker_tuner(self, **kwargs):
         return HyperparameterTuner(
             base_tuning_job_name=self.get_tuning_job_name(),
             estimator=self.get_sagemaker_estimator(),
             objective_metric_name=self.get_tuner_objective_metric_name(),
             objective_type=kwargs.get("objective_type", "Minimize"),
-            hyperparameter_ranges=hyperparameter_ranges,
+            hyperparameter_ranges=kwargs["hyperparameter_ranges"],
             metric_definitions=self.get_tuner_metric_definitions(),
             max_jobs=kwargs.get("max_jobs", 1),
             max_parallel_jobs=kwargs.get("max_parallel_jobs", 1),

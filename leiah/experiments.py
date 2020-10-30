@@ -98,13 +98,12 @@ class TuningExperiment(Experiment):
         )
 
         self.attributes = data
-        if "hyperparameter_ranges" in self.attributes:
-            del self.attributes["hyperparameter_ranges"]
+        self.attributes["hyperparameter_ranges"] = self._get_hyperparameter_ranges(
+            data.get("hyperparameter_ranges", None)
+        )
 
     def process(self):
-        self.estimator.tune(
-            hyperparameter_ranges=self.hyperparameter_ranges, **self.attributes
-        )
+        self.estimator.tune(**self.attributes)
 
     def _get_hyperparameter_ranges(self, hyperparameter_ranges):
         if not hyperparameter_ranges:
