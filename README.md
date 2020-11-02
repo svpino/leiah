@@ -2,10 +2,8 @@
 
 ## TODO
 
-
-* Add support for the following attributes in TuningEstimator:
-    - objective_metric_name
-    - objective_type
-    - metric_definitions  ----> We should have this one by default as part of the TensorFlowEstimator
+* Should we really allow to run an entire descriptor file without bounding it down to specific experiments?
 
 * Add support for FSxLustre
+* Overwriting properties without needing to specify the estimator again
+* 

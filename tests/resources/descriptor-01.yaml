@@ -3,13 +3,11 @@ models:
   model-01:
     release: model01-201014-1523-003-9013733b
     
-    estimator: 
-      classname: tests.resources.estimators.ModelEstimator
-      properties:
-        role: role-name
-        version: 3
-        train_instance_type: ml.p2.xlarge
-        train_max_run: 86400
+    estimator: tests.resources.estimators.ModelEstimator
+    role: role-name
+    version: 3
+    train_instance_type: ml.p2.xlarge
+    train_max_run: 86400
 
     hyperparameters:
       application: applications.inceptionv3
@@ -19,10 +17,8 @@ models:
       1:
         type: training
         description: Beautiful is better than ugly.
-        estimator: 
-          classname: tests.resources.estimators.ExperimentEstimator
-          properties:
-            sample: 123
+        estimator: tests.resources.estimators.ExperimentEstimator
+        sample: 123
 
         hyperparameters:
           learning_rate: 1e-3
@@ -30,6 +26,7 @@ models:
 
       2:
         type: training
+        role: role-name-experiment2
         hyperparameters:
           epochs: 60
           batch_size: 128
@@ -58,8 +55,7 @@ models:
     experiments:
       1.0.1:
         type: training
-        estimator: 
-          classname: tests.resources.estimators.DummyEstimator
+        estimator: tests.resources.estimators.DummyEstimator
         hyperparameters:
           epochs: 40
           learning_rate: 1e-3

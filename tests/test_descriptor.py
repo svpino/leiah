@@ -103,6 +103,12 @@ def test_experiments_estimator_hyperparameters_inheritance(descriptor):
     ), "Hyperparameter should have been overwritten"
 
 
+def test_experiments_estimator_attributes_inheritance(descriptor):
+    model = descriptor.models["model-01"]
+    estimator = model.experiments["2"].estimator
+    estimator.role == "role-name-experiment2"
+
+
 def test_no_models(descriptor_base_path):
     descriptor_file_path = descriptor_base_path / "descriptor-02.yaml"
     descriptor = Descriptor(descriptor_file_path)
@@ -142,11 +148,7 @@ def test_estimator_missing_properties():
                 "models": {
                     "model-01": {
                         "experiments": {
-                            "1": {
-                                "estimator": {
-                                    "classname": "leiah.estimators.TensorFlowEstimator"
-                                }
-                            }
+                            "1": {"estimator": "leiah.estimators.TensorFlowEstimator"}
                         }
                     }
                 }
@@ -213,9 +215,7 @@ def test_invalid_experiment_type():
                 "experiments": {
                     "experiment1": {
                         "type": "invalid",
-                        "estimator": {
-                            "classname": "tests.resources.estimators.DummyEstimator"
-                        },
+                        "estimator": "tests.resources.estimators.DummyEstimator",
                     }
                 }
             },

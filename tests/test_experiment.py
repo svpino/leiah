@@ -21,9 +21,7 @@ def tuning_experiment(model):
         model=model,
         identifier="experiment1",
         data={
-            "estimator": {
-                "classname": "tests.resources.estimators.DummyEstimator",
-            },
+            "estimator": "tests.resources.estimators.DummyEstimator",
             "hyperparameter_ranges": {
                 "property1": {"type": "categorical", "values": [1.0, 2.0]},
                 "property2": {"type": "integer", "min_value": 1.0, "max_value": 2.0},
@@ -39,9 +37,7 @@ def test_experiment_estimator():
         model=model,
         identifier="experiment1",
         data={
-            "estimator": {
-                "classname": "tests.resources.estimators.DummyEstimator",
-            },
+            "estimator": "tests.resources.estimators.DummyEstimator",
             "hyperparameters": {"hp1": 123},
         },
     )
@@ -62,9 +58,7 @@ def test_experiment_invalid_estimator(estimator):
             model=model,
             identifier="experiment1",
             data={
-                "estimator": {
-                    "classname": estimator,
-                },
+                "estimator": estimator,
                 "hyperparameters": {"hp1": 123},
             },
         )
@@ -186,9 +180,7 @@ def test_hyperparameter_ranges_missing_parameter_type(model):
             model=model,
             identifier="experiment1",
             data={
-                "estimator": {
-                    "classname": "tests.resources.estimators.DummyEstimator",
-                },
+                "estimator": "tests.resources.estimators.DummyEstimator",
                 "hyperparameter_ranges": {
                     "property1": {"values": [1.0, 2.0]},
                 },
@@ -202,9 +194,7 @@ def test_hyperparameter_ranges_invalid_parameter_type(model):
             model=model,
             identifier="experiment1",
             data={
-                "estimator": {
-                    "classname": "tests.resources.estimators.DummyEstimator",
-                },
+                "estimator": "tests.resources.estimators.DummyEstimator",
                 "hyperparameter_ranges": {
                     "property1": {"type": "invalid", "values": [1.0, 2.0]},
                 },
@@ -217,9 +207,7 @@ def test_tuning_experiment_kwargs(model):
         model=model,
         identifier="experiment1",
         data={
-            "estimator": {
-                "classname": "tests.resources.estimators.DummyEstimator",
-            },
+            "estimator": "tests.resources.estimators.DummyEstimator",
             "max_jobs": 10,
             "max_parallel_jobs": 4,
             "objective_type": "Maximize",

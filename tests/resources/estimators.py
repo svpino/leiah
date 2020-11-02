@@ -2,9 +2,14 @@ from leiah.estimators import Estimator
 
 
 class DummyEstimator(Estimator):
-    def __init__(self, model, experiment, hyperparameters=None, ranges=None) -> None:
+    def __init__(
+        self, model, experiment, hyperparameters=None, ranges=None, **kwargs
+    ) -> None:
         super().__init__(
-            model=model, experiment=experiment, hyperparameters=hyperparameters
+            model=model,
+            experiment=experiment,
+            hyperparameters=hyperparameters,
+            **kwargs
         )
 
         self.tuned = False
@@ -34,11 +39,13 @@ class ModelEstimator(Estimator):
         train_instance_type: str,
         train_max_run: int,
         hyperparameters=None,
+        **kwargs
     ) -> None:
         super().__init__(
             model=model,
             experiment=experiment,
             hyperparameters=hyperparameters,
+            **kwargs
         )
 
         self.role = role
@@ -67,12 +74,14 @@ class ExperimentEstimator(Estimator):
         train_instance_type: str,
         train_max_run: int,
         hyperparameters=None,
+        **kwargs
     ) -> None:
 
         super().__init__(
             model=model,
             experiment=experiment,
             hyperparameters=hyperparameters,
+            **kwargs
         )
 
         self.role = role

@@ -18,14 +18,8 @@ class Experiment(object):
     def _initialize(self, data):
         def get_properties():
             properties = dict()
-            if (
-                "estimator" in self.model.data
-                and "properties" in self.model.data["estimator"]
-            ):
-                properties.update(self.model.data["estimator"]["properties"])
-
-            if "estimator" in data and "properties" in data["estimator"]:
-                properties.update(data["estimator"]["properties"])
+            properties.update(self.model.data)
+            properties.update(data)
 
             return properties
 
@@ -42,9 +36,7 @@ class Experiment(object):
         self.description = data.get("description", None)
 
         estimator_classname = (
-            data["estimator"]["classname"]
-            if "estimator" in data
-            else self.model.data["estimator"]["classname"]
+            data["estimator"] if "estimator" in data else self.model.data["estimator"]
         )
 
         self.estimator = self._get_estimator(
@@ -56,6 +48,10 @@ class Experiment(object):
         )
 
     def _get_estimator(self, estimator, model, experiment, properties, hyperparameters):
+        def remove_attribute(properties, attribute):
+            if attribute in properties:
+                del properties[attribute]
+
         identifiers = estimator.strip().split(".")
         class_name = identifiers[-1]
         module_name = ".".join(identifiers[:-1])
@@ -71,6 +67,10 @@ class Experiment(object):
         except AttributeError:
             raise DescriptorError(f'Error creating estimator "{estimator}"')
         else:
+            remove_attribute(properties, "model")
+            remove_attribute(properties, "experiment")
+            remove_attribute(properties, "hyperparameters")
+
             try:
                 return class_(
                     model=model,

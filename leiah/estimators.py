@@ -7,7 +7,9 @@ from sagemaker.tuner import (
 
 
 class Estimator(object):
-    def __init__(self, model: str, experiment: str, hyperparameters: dict = None):
+    def __init__(
+        self, model: str, experiment: str, hyperparameters: dict = None, **kwargs
+    ):
         self.model = model
         self.experiment = experiment
         self.hyperparameters = hyperparameters or dict()
@@ -21,7 +23,7 @@ class Estimator(object):
     def tune(self, **kwargs):
         print(f"Tuning estimator {self.get_tuning_job_name()}...")
         sagemaker_tuner = self.get_sagemaker_tuner(**kwargs)
-        return sagemaker_tuner.fit(self.channels)
+        return sagemaker_tuner.fit(self.channels, wait=False)
 
     def get_training_job_name(self):
         return f"training-{self.model}-{self.experiment}"
@@ -71,6 +73,7 @@ class TensorFlowEstimator(Estimator):
         train_volume_size: int = 10,
         debugger_hook_config: bool = False,
         channels: dict = None,
+        **kwargs,
     ):
         super().__init__(
             model=model,
