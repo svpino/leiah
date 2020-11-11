@@ -1,3 +1,4 @@
+from leiah.estimators import Estimator
 import pytest
 
 from sagemaker.parameter import (
@@ -6,7 +7,7 @@ from sagemaker.parameter import (
     IntegerParameter,
 )
 from leiah.descriptor import Model
-from leiah.experiments import Experiment, TuningExperiment
+from leiah.processes import Experiment, Process
 from leiah.exceptions import DescriptorError
 
 
@@ -16,8 +17,8 @@ def model():
 
 
 @pytest.fixture
-def tuning_experiment(model):
-    return TuningExperiment(
+def experiment_process(model):
+    return Experiment(
         model=model,
         identifier="experiment1",
         data={
@@ -35,7 +36,7 @@ def test_experiment_estimator():
     model = Model("model1", data={})
     experiment = Experiment(
         model=model,
-        identifier="experiment1",
+        identifier="process1",
         data={
             "estimator": "tests.resources.estimators.DummyEstimator",
             "hyperparameters": {"hp1": 123},
@@ -43,7 +44,7 @@ def test_experiment_estimator():
     )
 
     assert experiment.estimator.model == "model1"
-    assert experiment.estimator.experiment == "experiment1"
+    assert experiment.estimator.process == "process1"
     assert experiment.estimator.hyperparameters["hp1"] == 123
 
 
@@ -64,8 +65,8 @@ def test_experiment_invalid_estimator(estimator):
         )
 
 
-def test__get_categorical_parameter(tuning_experiment):
-    parameter = tuning_experiment._get_categorical_parameter(
+def test__get_categorical_parameter(experiment_process):
+    parameter = experiment_process._get_categorical_parameter(
         data={"type": "categorical", "values": [1.0, 2.0]}
     )
 
@@ -73,13 +74,13 @@ def test__get_categorical_parameter(tuning_experiment):
     assert parameter.values == ["1.0", "2.0"]
 
 
-def test__get_categorical_parameter_missing_attribute(tuning_experiment):
+def test__get_categorical_parameter_missing_attribute(experiment_process):
     with pytest.raises(DescriptorError):
-        tuning_experiment._get_categorical_parameter(data={"type": "categorical"})
+        experiment_process._get_categorical_parameter(data={"type": "categorical"})
 
 
-def test__get_integer_parameter(tuning_experiment):
-    parameter = tuning_experiment._get_integer_parameter(
+def test__get_integer_parameter(experiment_process):
+    parameter = experiment_process._get_integer_parameter(
         data={
             "type": "integer",
             "min_value": 1.0,
@@ -94,9 +95,9 @@ def test__get_integer_parameter(tuning_experiment):
     assert parameter.scaling_type == "Linear"
 
 
-def test__get_integer_parameter_missing_attribute(tuning_experiment):
+def test__get_integer_parameter_missing_attribute(experiment_process):
     with pytest.raises(DescriptorError):
-        tuning_experiment._get_integer_parameter(
+        experiment_process._get_integer_parameter(
             data={
                 "type": "integer",
                 "max_value": 10,
@@ -104,7 +105,7 @@ def test__get_integer_parameter_missing_attribute(tuning_experiment):
         )
 
     with pytest.raises(DescriptorError):
-        tuning_experiment._get_integer_parameter(
+        experiment_process._get_integer_parameter(
             data={
                 "type": "integer",
                 "min_value": 1,
@@ -112,8 +113,8 @@ def test__get_integer_parameter_missing_attribute(tuning_experiment):
         )
 
 
-def test__get_integer_parameter_default_scaling_type(tuning_experiment):
-    parameter = tuning_experiment._get_integer_parameter(
+def test__get_integer_parameter_default_scaling_type(experiment_process):
+    parameter = experiment_process._get_integer_parameter(
         data={
             "type": "integer",
             "min_value": 10,
@@ -124,8 +125,8 @@ def test__get_integer_parameter_default_scaling_type(tuning_experiment):
     assert parameter.scaling_type == "Auto"
 
 
-def test__get_continuous_parameter(tuning_experiment):
-    parameter = tuning_experiment._get_continuous_parameter(
+def test__get_continuous_parameter(experiment_process):
+    parameter = experiment_process._get_continuous_parameter(
         data={
             "type": "continuous",
             "min_value": 1.0,
@@ -140,9 +141,9 @@ def test__get_continuous_parameter(tuning_experiment):
     assert parameter.scaling_type == "Linear"
 
 
-def test__get_continuous_parameter_missing_attribute(tuning_experiment):
+def test__get_continuous_parameter_missing_attribute(experiment_process):
     with pytest.raises(DescriptorError):
-        tuning_experiment._get_continuous_parameter(
+        experiment_process._get_continuous_parameter(
             data={
                 "type": "integer",
                 "max_value": 10,
@@ -150,7 +151,7 @@ def test__get_continuous_parameter_missing_attribute(tuning_experiment):
         )
 
     with pytest.raises(DescriptorError):
-        tuning_experiment._get_continuous_parameter(
+        experiment_process._get_continuous_parameter(
             data={
                 "type": "integer",
                 "min_value": 1,
@@ -158,8 +159,8 @@ def test__get_continuous_parameter_missing_attribute(tuning_experiment):
         )
 
 
-def test__get_continuous_parameter_default_scaling_type(tuning_experiment):
-    parameter = tuning_experiment._get_continuous_parameter(
+def test__get_continuous_parameter_default_scaling_type(experiment_process):
+    parameter = experiment_process._get_continuous_parameter(
         data={
             "type": "integer",
             "min_value": 10,
@@ -170,13 +171,13 @@ def test__get_continuous_parameter_default_scaling_type(tuning_experiment):
     assert parameter.scaling_type == "Auto"
 
 
-def test_hyperparameter_ranges(tuning_experiment):
-    assert len(tuning_experiment.hyperparameter_ranges) == 3
+def test_hyperparameter_ranges(experiment_process):
+    assert len(experiment_process.hyperparameter_ranges) == 3
 
 
 def test_hyperparameter_ranges_missing_parameter_type(model):
     with pytest.raises(DescriptorError):
-        TuningExperiment(
+        Experiment(
             model=model,
             identifier="experiment1",
             data={
@@ -190,7 +191,7 @@ def test_hyperparameter_ranges_missing_parameter_type(model):
 
 def test_hyperparameter_ranges_invalid_parameter_type(model):
     with pytest.raises(DescriptorError):
-        TuningExperiment(
+        Experiment(
             model=model,
             identifier="experiment1",
             data={
@@ -202,10 +203,10 @@ def test_hyperparameter_ranges_invalid_parameter_type(model):
         )
 
 
-def test_tuning_experiment_kwargs(model):
-    experiment = TuningExperiment(
+def test_experiment_process_kwargs(model):
+    process = Experiment(
         model=model,
-        identifier="experiment1",
+        identifier="process1",
         data={
             "estimator": "tests.resources.estimators.DummyEstimator",
             "max_jobs": 10,
@@ -214,14 +215,14 @@ def test_tuning_experiment_kwargs(model):
         },
     )
 
-    experiment.process()
-    assert experiment.estimator.kwargs["max_jobs"] == 10
-    assert experiment.estimator.kwargs["max_parallel_jobs"] == 4
-    assert experiment.estimator.kwargs["objective_type"] == "Maximize"
+    process.run()
+    assert process.estimator.kwargs["max_jobs"] == 10
+    assert process.estimator.kwargs["max_parallel_jobs"] == 4
+    assert process.estimator.kwargs["objective_type"] == "Maximize"
 
 
-def test_tuning_experiment_hyperparameter_ranges(tuning_experiment):
-    tuning_experiment.process()
-    assert len(tuning_experiment.estimator.kwargs["hyperparameter_ranges"]) == len(
-        tuning_experiment.hyperparameter_ranges
+def test_experiment_process_hyperparameter_ranges(experiment_process):
+    experiment_process.run()
+    assert len(experiment_process.estimator.kwargs["hyperparameter_ranges"]) == len(
+        experiment_process.hyperparameter_ranges
     )

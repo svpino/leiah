@@ -13,9 +13,8 @@ models:
       application: applications.inceptionv3
       epochs: 50
 
-    experiments:
+    training:
       1:
-        type: training
         description: Beautiful is better than ugly.
         estimator: tests.resources.estimators.ExperimentEstimator
         sample: 123
@@ -25,14 +24,13 @@ models:
           batch_size: 64
 
       2:
-        type: training
         role: role-name-experiment2
         hyperparameters:
           epochs: 60
           batch_size: 128
 
+    experiments:
       hpt-01:
-        type: tuning
         description: Although practicality beats purity.
         max_jobs: 10
         max_parallel_jobs: 2
@@ -52,9 +50,9 @@ models:
     hyperparameters:
       application: applications.resnet50
       epochs: 50
-    experiments:
+    
+    training:
       1.0.1:
-        type: training
         estimator: tests.resources.estimators.DummyEstimator
         hyperparameters:
           epochs: 40

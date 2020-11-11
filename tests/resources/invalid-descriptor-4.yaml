@@ -1,5 +1,20 @@
+models:
+  sample:
+    estimator: tests.resources.estimators.ModelEstimator
+    train_volume_size: 20
+    
+   hyperparameters:
+      epochs: 10
+      learning_rate: 1e-3
+      learning_rate_fine_tuning: 1e-5
+      unfreeze_layers: 15
 
-models;
-  model-01
-    estimator:
-      classname; invalid.Estimator
+    training:
+      test:
+        description: This is a test round.
+        
+        hyperparameters:
+          epochs: 10
+          learning_rate: 1e-3
+          learning_rate_fine_tuning: 1e-5
+        

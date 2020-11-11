@@ -8,7 +8,7 @@ from sagemaker.tuner import (
 from leiah.exceptions import DescriptorError
 
 
-class Experiment(object):
+class Process(object):
     def __init__(self, model: object, identifier: str, data: dict) -> None:
         self.model = model
         self.identifier = identifier
@@ -42,12 +42,12 @@ class Experiment(object):
         self.estimator = self._get_estimator(
             estimator_classname,
             model=self.model.name,
-            experiment=self.identifier,
+            process=self.identifier,
             properties=get_properties(),
             hyperparameters=get_hyperparameters(),
         )
 
-    def _get_estimator(self, estimator, model, experiment, properties, hyperparameters):
+    def _get_estimator(self, estimator, model, process, properties, hyperparameters):
         def remove_attribute(properties, attribute):
             if attribute in properties:
                 del properties[attribute]
@@ -68,13 +68,13 @@ class Experiment(object):
             raise DescriptorError(f'Error creating estimator "{estimator}"')
         else:
             remove_attribute(properties, "model")
-            remove_attribute(properties, "experiment")
+            remove_attribute(properties, "process")
             remove_attribute(properties, "hyperparameters")
 
             try:
                 return class_(
                     model=model,
-                    experiment=experiment,
+                    process=process,
                     hyperparameters=hyperparameters,
                     **properties,
                 )
@@ -84,12 +84,12 @@ class Experiment(object):
                 )
 
 
-class TrainingExperiment(Experiment):
-    def process(self):
+class Training(Process):
+    def run(self):
         self.estimator.fit()
 
 
-class TuningExperiment(Experiment):
+class Experiment(Process):
     def __init__(self, model: object, identifier: str, data: dict) -> None:
         super().__init__(model=model, identifier=identifier, data=data)
 
@@ -102,7 +102,7 @@ class TuningExperiment(Experiment):
             data.get("hyperparameter_ranges", None)
         )
 
-    def process(self):
+    def run(self):
         self.estimator.tune(**self.attributes)
 
     def _get_hyperparameter_ranges(self, hyperparameter_ranges):

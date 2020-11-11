@@ -1,34 +1,40 @@
 from pathlib import Path
 import yaml
+from yaml.parser import ParserError
 
 from yaml.scanner import ScannerError
-from leiah.experiments import TrainingExperiment, TuningExperiment
+from leiah.processes import Training, Experiment
 from leiah.exceptions import DescriptorError
 
 
 class Model(object):
     def __init__(self, name: str, data: dict()) -> None:
         self.name = name
-        self.experiments = dict()
         self.data = data
+        self.processes = dict()
 
-        if "experiments" in data:
-            for identifier, data in data["experiments"].items():
-                identifier = str(identifier)
-                type = data.get("type", "training")
+        self._load_processes(
+            self.data,
+            "training",
+            lambda model, identifier, data: Training(model, identifier, data),
+        )
 
-                if type == "training":
-                    experiment = TrainingExperiment(
-                        model=self, identifier=identifier, data=data
-                    )
-                elif type == "tuning":
-                    experiment = TuningExperiment(
-                        model=self, identifier=identifier, data=data
-                    )
-                else:
-                    raise DescriptorError(f'Experiment type "{type}" is not supported.')
+        self._load_processes(
+            self.data,
+            "experiments",
+            lambda model, identifier, data: Experiment(model, identifier, data),
+        )
 
-                self.experiments[identifier] = experiment
+    def _load_processes(self, data, section, factory_fn):
+        if section not in data:
+            return
+
+        for identifier, data in data[section].items():
+            identifier = str(identifier)
+
+            self.processes[identifier] = factory_fn(
+                model=self, identifier=identifier, data=data
+            )
 
 
 class Descriptor(object):
@@ -45,36 +51,36 @@ class Descriptor(object):
                 "the path of the descriptor file."
             )
 
-    def process(self, experiments=None):
-        for experiment in self._get_experiments(experiments):
-            experiment.process()
+    def process(self, processes=None):
+        for process in self._get_processes(processes):
+            process.run()
 
-    def _get_experiments(self, experiments=None) -> list:
-        if experiments is None:
-            experiments = list(self.models.keys())
-        elif isinstance(experiments, str):
-            experiments = [experiments]
+    def _get_processes(self, processes=None) -> list:
+        if processes is None:
+            processes = list(self.models.keys())
+        elif isinstance(processes, str):
+            processes = [processes]
 
         result = []
 
-        for name in experiments:
+        for name in processes:
             identifier = name.split(".", 1)
 
             try:
                 model = self.models[identifier[0]]
             except KeyError:
-                raise DescriptorError(f'Experiment "{name}" was not found')
+                raise DescriptorError(f'Process "{name}" was not found')
 
             if len(identifier) == 2:
                 try:
-                    experiment = model.experiments[identifier[1]]
+                    process = model.processes[identifier[1]]
                 except KeyError:
-                    raise DescriptorError(f'Experiment "{name}" was not found')
+                    raise DescriptorError(f'Process "{name}" was not found')
                 else:
-                    result.append(experiment)
+                    result.append(process)
             else:
-                for experiment in model.experiments.values():
-                    result.append(experiment)
+                for process in model.processes.values():
+                    result.append(process)
 
         return result
 
@@ -84,8 +90,14 @@ class Descriptor(object):
                 data = yaml.load(f, Loader=yaml.FullLoader)
         except FileNotFoundError:
             raise
-        except ScannerError:
-            raise DescriptorError("The specified file is not a valid descriptor")
+        except ScannerError as e:
+            raise DescriptorError(
+                f"The specified file is not a valid descriptor. Error: {str(e)}"
+            )
+        except ParserError as e:
+            raise DescriptorError(
+                f"The specified file is not a valid descriptor. Error: {str(e)}"
+            )
         else:
             self._parse_descriptor(data)
 

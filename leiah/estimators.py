@@ -8,10 +8,10 @@ from sagemaker.tuner import (
 
 class Estimator(object):
     def __init__(
-        self, model: str, experiment: str, hyperparameters: dict = None, **kwargs
+        self, model: str, process: str, hyperparameters: dict = None, **kwargs
     ):
         self.model = model
-        self.experiment = experiment
+        self.process = process
         self.hyperparameters = hyperparameters or dict()
 
     def fit(self):
@@ -26,10 +26,10 @@ class Estimator(object):
         return sagemaker_tuner.fit(self.channels, wait=False)
 
     def get_training_job_name(self):
-        return f"training-{self.model}-{self.experiment}"
+        return f"training-{self.model}-{self.process}"
 
     def get_tuning_job_name(self):
-        return f"tuning-{self.model}-{self.experiment}"
+        return f"experiment-{self.model}-{self.process}"
 
     def get_sagemaker_tuner(self, **kwargs):
         return HyperparameterTuner(
@@ -57,7 +57,7 @@ class TensorFlowEstimator(Estimator):
     def __init__(
         self,
         model: str,
-        experiment: str,
+        process: str,
         entry_point: str,
         train_instance_type: str,
         source_dir: str,
@@ -77,7 +77,7 @@ class TensorFlowEstimator(Estimator):
     ):
         super().__init__(
             model=model,
-            experiment=experiment,
+            process=process,
             hyperparameters=hyperparameters,
         )
 

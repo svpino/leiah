@@ -3,11 +3,11 @@ from leiah.estimators import Estimator
 
 class DummyEstimator(Estimator):
     def __init__(
-        self, model, experiment, hyperparameters=None, ranges=None, **kwargs
+        self, model, process, hyperparameters=None, ranges=None, **kwargs
     ) -> None:
         super().__init__(
             model=model,
-            experiment=experiment,
+            process=process,
             hyperparameters=hyperparameters,
             **kwargs
         )
@@ -33,7 +33,7 @@ class ModelEstimator(Estimator):
     def __init__(
         self,
         model: str,
-        experiment: str,
+        process: str,
         role: str,
         version: int,
         train_instance_type: str,
@@ -43,7 +43,7 @@ class ModelEstimator(Estimator):
     ) -> None:
         super().__init__(
             model=model,
-            experiment=experiment,
+            process=process,
             hyperparameters=hyperparameters,
             **kwargs
         )
@@ -67,7 +67,7 @@ class ExperimentEstimator(Estimator):
     def __init__(
         self,
         model: str,
-        experiment: str,
+        process: str,
         role: str,
         version: int,
         sample: int,
@@ -79,7 +79,7 @@ class ExperimentEstimator(Estimator):
 
         super().__init__(
             model=model,
-            experiment=experiment,
+            process=process,
             hyperparameters=hyperparameters,
             **kwargs
         )

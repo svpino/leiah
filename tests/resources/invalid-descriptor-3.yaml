@@ -1,5 +1,5 @@
 
-models:
-  model-01:
-    estimator: 
-      classname: invalid.Estimator
+models;
+  model-01
+    estimator:
+      classname; invalid.Estimator
