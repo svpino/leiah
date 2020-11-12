@@ -8,7 +8,7 @@ from sagemaker.tuner import (
 from leiah.exceptions import DescriptorError
 
 
-class Process(object):
+class SagemakerJob(object):
     def __init__(self, model: object, identifier: str, data: dict) -> None:
         self.model = model
         self.identifier = identifier
@@ -42,12 +42,12 @@ class Process(object):
         self.estimator = self._get_estimator(
             estimator_classname,
             model=self.model.name,
-            process=self.identifier,
+            job=self.identifier,
             properties=get_properties(),
             hyperparameters=get_hyperparameters(),
         )
 
-    def _get_estimator(self, estimator, model, process, properties, hyperparameters):
+    def _get_estimator(self, estimator, model, job, properties, hyperparameters):
         def remove_attribute(properties, attribute):
             if attribute in properties:
                 del properties[attribute]
@@ -68,13 +68,13 @@ class Process(object):
             raise DescriptorError(f'Error creating estimator "{estimator}"')
         else:
             remove_attribute(properties, "model")
-            remove_attribute(properties, "process")
+            remove_attribute(properties, "job")
             remove_attribute(properties, "hyperparameters")
 
             try:
                 return class_(
                     model=model,
-                    process=process,
+                    job=job,
                     hyperparameters=hyperparameters,
                     **properties,
                 )
@@ -84,12 +84,12 @@ class Process(object):
                 )
 
 
-class Training(Process):
+class TrainingJob(SagemakerJob):
     def run(self):
         self.estimator.fit()
 
 
-class Experiment(Process):
+class HyperparameterTuningJob(SagemakerJob):
     def __init__(self, model: object, identifier: str, data: dict) -> None:
         super().__init__(model=model, identifier=identifier, data=data)
 

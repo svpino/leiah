@@ -9,7 +9,7 @@ models:
       learning_rate_fine_tuning: 1e-5
       unfreeze_layers: 15
 
-    training:
+    training-jobs:
       test:
         description: This is a test round.
         

@@ -1,9 +1,10 @@
-from pathlib import Path
 import yaml
-from yaml.parser import ParserError
 
+from pathlib import Path
+from yaml.parser import ParserError
 from yaml.scanner import ScannerError
-from leiah.processes import Training, Experiment
+
+from leiah.jobs import TrainingJob, HyperparameterTuningJob
 from leiah.exceptions import DescriptorError
 
 
@@ -11,28 +12,30 @@ class Model(object):
     def __init__(self, name: str, data: dict()) -> None:
         self.name = name
         self.data = data
-        self.processes = dict()
+        self.jobs = dict()
 
-        self._load_processes(
+        self._load_jobs(
             self.data,
-            "training",
-            lambda model, identifier, data: Training(model, identifier, data),
+            "training-jobs",
+            lambda model, identifier, data: TrainingJob(model, identifier, data),
         )
 
-        self._load_processes(
+        self._load_jobs(
             self.data,
-            "experiments",
-            lambda model, identifier, data: Experiment(model, identifier, data),
+            "hyperparameter-tuning-jobs",
+            lambda model, identifier, data: HyperparameterTuningJob(
+                model, identifier, data
+            ),
         )
 
-    def _load_processes(self, data, section, factory_fn):
+    def _load_jobs(self, data, section, factory_fn):
         if section not in data:
             return
 
         for identifier, data in data[section].items():
             identifier = str(identifier)
 
-            self.processes[identifier] = factory_fn(
+            self.jobs[identifier] = factory_fn(
                 model=self, identifier=identifier, data=data
             )
 
@@ -51,36 +54,36 @@ class Descriptor(object):
                 "the path of the descriptor file."
             )
 
-    def process(self, processes=None):
-        for process in self._get_processes(processes):
-            process.run()
+    def run(self, jobs=None):
+        for job in self._get_jobs(jobs):
+            job.run()
 
-    def _get_processes(self, processes=None) -> list:
-        if processes is None:
-            processes = list(self.models.keys())
-        elif isinstance(processes, str):
-            processes = [processes]
+    def _get_jobs(self, jobs=None) -> list:
+        if jobs is None:
+            jobs = list(self.models.keys())
+        elif isinstance(jobs, str):
+            jobs = [jobs]
 
         result = []
 
-        for name in processes:
+        for name in jobs:
             identifier = name.split(".", 1)
 
             try:
                 model = self.models[identifier[0]]
             except KeyError:
-                raise DescriptorError(f'Process "{name}" was not found')
+                raise DescriptorError(f'Job "{name}" was not found')
 
             if len(identifier) == 2:
                 try:
-                    process = model.processes[identifier[1]]
+                    job = model.jobs[identifier[1]]
                 except KeyError:
-                    raise DescriptorError(f'Process "{name}" was not found')
+                    raise DescriptorError(f'Job "{name}" was not found')
                 else:
-                    result.append(process)
+                    result.append(job)
             else:
-                for process in model.processes.values():
-                    result.append(process)
+                for job in model.jobs.values():
+                    result.append(job)
 
         return result
 

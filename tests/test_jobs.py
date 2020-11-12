@@ -1,4 +1,3 @@
-from leiah.estimators import Estimator
 import pytest
 
 from sagemaker.parameter import (
@@ -7,7 +6,7 @@ from sagemaker.parameter import (
     IntegerParameter,
 )
 from leiah.descriptor import Model
-from leiah.processes import Experiment, Process
+from leiah.jobs import HyperparameterTuningJob
 from leiah.exceptions import DescriptorError
 
 
@@ -17,10 +16,10 @@ def model():
 
 
 @pytest.fixture
-def experiment_process(model):
-    return Experiment(
+def hyperparameter_tuning_job(model):
+    return HyperparameterTuningJob(
         model=model,
-        identifier="experiment1",
+        identifier="job1",
         data={
             "estimator": "tests.resources.estimators.DummyEstimator",
             "hyperparameter_ranges": {
@@ -32,32 +31,32 @@ def experiment_process(model):
     )
 
 
-def test_experiment_estimator():
+def test_job_estimator():
     model = Model("model1", data={})
-    experiment = Experiment(
+    job = HyperparameterTuningJob(
         model=model,
-        identifier="process1",
+        identifier="job1",
         data={
             "estimator": "tests.resources.estimators.DummyEstimator",
             "hyperparameters": {"hp1": 123},
         },
     )
 
-    assert experiment.estimator.model == "model1"
-    assert experiment.estimator.process == "process1"
-    assert experiment.estimator.hyperparameters["hp1"] == 123
+    assert job.estimator.model == "model1"
+    assert job.estimator.job == "job1"
+    assert job.estimator.hyperparameters["hp1"] == 123
 
 
 @pytest.mark.parametrize(
     "estimator",
     [("invalid"), ("invalid.module.Estimator"), ("tests.resources.estimators.Invalid")],
 )
-def test_experiment_invalid_estimator(estimator):
+def test_job_invalid_estimator(estimator):
     model = Model("model1", data={})
     with pytest.raises(DescriptorError):
-        Experiment(
+        HyperparameterTuningJob(
             model=model,
-            identifier="experiment1",
+            identifier="job1",
             data={
                 "estimator": estimator,
                 "hyperparameters": {"hp1": 123},
@@ -65,8 +64,8 @@ def test_experiment_invalid_estimator(estimator):
         )
 
 
-def test__get_categorical_parameter(experiment_process):
-    parameter = experiment_process._get_categorical_parameter(
+def test__get_categorical_parameter(hyperparameter_tuning_job):
+    parameter = hyperparameter_tuning_job._get_categorical_parameter(
         data={"type": "categorical", "values": [1.0, 2.0]}
     )
 
@@ -74,13 +73,15 @@ def test__get_categorical_parameter(experiment_process):
     assert parameter.values == ["1.0", "2.0"]
 
 
-def test__get_categorical_parameter_missing_attribute(experiment_process):
+def test__get_categorical_parameter_missing_attribute(hyperparameter_tuning_job):
     with pytest.raises(DescriptorError):
-        experiment_process._get_categorical_parameter(data={"type": "categorical"})
+        hyperparameter_tuning_job._get_categorical_parameter(
+            data={"type": "categorical"}
+        )
 
 
-def test__get_integer_parameter(experiment_process):
-    parameter = experiment_process._get_integer_parameter(
+def test__get_integer_parameter(hyperparameter_tuning_job):
+    parameter = hyperparameter_tuning_job._get_integer_parameter(
         data={
             "type": "integer",
             "min_value": 1.0,
@@ -95,9 +96,9 @@ def test__get_integer_parameter(experiment_process):
     assert parameter.scaling_type == "Linear"
 
 
-def test__get_integer_parameter_missing_attribute(experiment_process):
+def test__get_integer_parameter_missing_attribute(hyperparameter_tuning_job):
     with pytest.raises(DescriptorError):
-        experiment_process._get_integer_parameter(
+        hyperparameter_tuning_job._get_integer_parameter(
             data={
                 "type": "integer",
                 "max_value": 10,
@@ -105,7 +106,7 @@ def test__get_integer_parameter_missing_attribute(experiment_process):
         )
 
     with pytest.raises(DescriptorError):
-        experiment_process._get_integer_parameter(
+        hyperparameter_tuning_job._get_integer_parameter(
             data={
                 "type": "integer",
                 "min_value": 1,
@@ -113,8 +114,8 @@ def test__get_integer_parameter_missing_attribute(experiment_process):
         )
 
 
-def test__get_integer_parameter_default_scaling_type(experiment_process):
-    parameter = experiment_process._get_integer_parameter(
+def test__get_integer_parameter_default_scaling_type(hyperparameter_tuning_job):
+    parameter = hyperparameter_tuning_job._get_integer_parameter(
         data={
             "type": "integer",
             "min_value": 10,
@@ -125,8 +126,8 @@ def test__get_integer_parameter_default_scaling_type(experiment_process):
     assert parameter.scaling_type == "Auto"
 
 
-def test__get_continuous_parameter(experiment_process):
-    parameter = experiment_process._get_continuous_parameter(
+def test__get_continuous_parameter(hyperparameter_tuning_job):
+    parameter = hyperparameter_tuning_job._get_continuous_parameter(
         data={
             "type": "continuous",
             "min_value": 1.0,
@@ -141,9 +142,9 @@ def test__get_continuous_parameter(experiment_process):
     assert parameter.scaling_type == "Linear"
 
 
-def test__get_continuous_parameter_missing_attribute(experiment_process):
+def test__get_continuous_parameter_missing_attribute(hyperparameter_tuning_job):
     with pytest.raises(DescriptorError):
-        experiment_process._get_continuous_parameter(
+        hyperparameter_tuning_job._get_continuous_parameter(
             data={
                 "type": "integer",
                 "max_value": 10,
@@ -151,7 +152,7 @@ def test__get_continuous_parameter_missing_attribute(experiment_process):
         )
 
     with pytest.raises(DescriptorError):
-        experiment_process._get_continuous_parameter(
+        hyperparameter_tuning_job._get_continuous_parameter(
             data={
                 "type": "integer",
                 "min_value": 1,
@@ -159,8 +160,8 @@ def test__get_continuous_parameter_missing_attribute(experiment_process):
         )
 
 
-def test__get_continuous_parameter_default_scaling_type(experiment_process):
-    parameter = experiment_process._get_continuous_parameter(
+def test__get_continuous_parameter_default_scaling_type(hyperparameter_tuning_job):
+    parameter = hyperparameter_tuning_job._get_continuous_parameter(
         data={
             "type": "integer",
             "min_value": 10,
@@ -171,15 +172,15 @@ def test__get_continuous_parameter_default_scaling_type(experiment_process):
     assert parameter.scaling_type == "Auto"
 
 
-def test_hyperparameter_ranges(experiment_process):
-    assert len(experiment_process.hyperparameter_ranges) == 3
+def test_hyperparameter_ranges(hyperparameter_tuning_job):
+    assert len(hyperparameter_tuning_job.hyperparameter_ranges) == 3
 
 
 def test_hyperparameter_ranges_missing_parameter_type(model):
     with pytest.raises(DescriptorError):
-        Experiment(
+        HyperparameterTuningJob(
             model=model,
-            identifier="experiment1",
+            identifier="job1",
             data={
                 "estimator": "tests.resources.estimators.DummyEstimator",
                 "hyperparameter_ranges": {
@@ -191,9 +192,9 @@ def test_hyperparameter_ranges_missing_parameter_type(model):
 
 def test_hyperparameter_ranges_invalid_parameter_type(model):
     with pytest.raises(DescriptorError):
-        Experiment(
+        HyperparameterTuningJob(
             model=model,
-            identifier="experiment1",
+            identifier="job1",
             data={
                 "estimator": "tests.resources.estimators.DummyEstimator",
                 "hyperparameter_ranges": {
@@ -203,10 +204,10 @@ def test_hyperparameter_ranges_invalid_parameter_type(model):
         )
 
 
-def test_experiment_process_kwargs(model):
-    process = Experiment(
+def test_hyperparameter_tuning_job_kwargs(model):
+    job = HyperparameterTuningJob(
         model=model,
-        identifier="process1",
+        identifier="job1",
         data={
             "estimator": "tests.resources.estimators.DummyEstimator",
             "max_jobs": 10,
@@ -215,14 +216,14 @@ def test_experiment_process_kwargs(model):
         },
     )
 
-    process.run()
-    assert process.estimator.kwargs["max_jobs"] == 10
-    assert process.estimator.kwargs["max_parallel_jobs"] == 4
-    assert process.estimator.kwargs["objective_type"] == "Maximize"
+    job.run()
+    assert job.estimator.kwargs["max_jobs"] == 10
+    assert job.estimator.kwargs["max_parallel_jobs"] == 4
+    assert job.estimator.kwargs["objective_type"] == "Maximize"
 
 
-def test_experiment_process_hyperparameter_ranges(experiment_process):
-    experiment_process.run()
-    assert len(experiment_process.estimator.kwargs["hyperparameter_ranges"]) == len(
-        experiment_process.hyperparameter_ranges
-    )
+def test_hyperparameter_tuning_job_hyperparameter_ranges(hyperparameter_tuning_job):
+    hyperparameter_tuning_job.run()
+    assert len(
+        hyperparameter_tuning_job.estimator.kwargs["hyperparameter_ranges"]
+    ) == len(hyperparameter_tuning_job.hyperparameter_ranges)
